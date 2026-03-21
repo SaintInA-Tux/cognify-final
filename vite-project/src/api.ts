@@ -96,9 +96,8 @@ export interface ChatMessage {
 
 // ── Config ──────────────────────────────────────────────────────────────
 
-// In dev, Vite proxy rewrites /api → http://localhost:8000
-// In production, we point directly to the live Render backend!
-const BASE_URL = import.meta.env.DEV ? "/api/v1" : "https://cognify-api-56et.onrender.com/v1";
+// Point directly to the live Render backend permanently
+const BASE_URL = "https://cognify-api-56et.onrender.com/v1";
 
 // Fixed test student UUID — replace with real auth later
 const TEST_STUDENT_ID = "00000000-0000-4000-8000-000000000001";
