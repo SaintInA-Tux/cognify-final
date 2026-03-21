@@ -251,11 +251,20 @@ async def _process_problem(
         
     if session_id:
         user_msg = ChatMessage(session_id=session_id, role="user", content=problem, mode="brain")
+        
+        # Pedagogical labels: use more natural terms if it's a conceptual question
+        is_conceptual = "conceptual" in classification.pattern.lower() or "theory" in classification.pattern.lower()
+        
+        p_label = "The Big Idea" if is_conceptual else "Pattern"
+        m_label = "Core Principle" if is_conceptual else "Method"
+        s_label = "Context" if is_conceptual else "Setup"
+        f_label = "Next Step" if is_conceptual else "First Step"
+
         responseText = [
-            f"**Pattern:** {response.pattern}",
-            f"**Method:** {response.method}",
-            f"**Setup:** {response.setup}",
-            f"**First Step:** {response.first_step}",
+            f"**{p_label}:** {response.pattern}",
+            f"**{m_label}:** {response.method}",
+            f"**{s_label}:** {response.setup}",
+            f"**{f_label}:** {response.first_step}",
         ]
         asst_msg = ChatMessage(session_id=session_id, role="assistant", content="\n\n".join(responseText), mode="brain")
         db.add_all([user_msg, asst_msg])
