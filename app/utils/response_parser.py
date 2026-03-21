@@ -81,6 +81,23 @@ def extract_json(text: str) -> str:
     raise ValueError(f"Malformed JSON in LLM response. Raw: {text[:200]}")
 
 
+def fix_latex_delimiters(data: Any) -> Any:
+    """
+    Recursively walk the parsed JSON and replace markdown math delimiters 
+    \( \) and \[ \] with $ and $$ so the frontend's remark-math can parse them.
+    Many LLMs stubbornly output \( \) despite prompt instructions.
+    """
+    if isinstance(data, dict):
+        return {k: fix_latex_delimiters(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [fix_latex_delimiters(v) for v in data]
+    elif isinstance(data, str):
+        txt = data.replace(r"\(", "$").replace(r"\)", "$")
+        txt = txt.replace(r"\[", "$$").replace(r"\]", "$$")
+        return txt
+    return data
+
+
 def parse_llm_response(raw: str, model_class: type[T]) -> T:
     """
     Generic pipeline: strip reasoning → extract JSON → validate with Pydantic.
@@ -91,6 +108,7 @@ def parse_llm_response(raw: str, model_class: type[T]) -> T:
         cleaned = strip_reasoning_block(raw)
         json_str = extract_json(cleaned)
         data: dict[str, Any] = json.loads(json_str)
+        data = fix_latex_delimiters(data)
         return model_class.model_validate(data)
     except (json.JSONDecodeError, ValueError) as exc:
         logger.error("JSON parse error. Raw response: %s", raw[:500])
@@ -116,6 +134,7 @@ def parse_brain_mode_response(raw: str, model_class: type[T]) -> T:
         cleaned = strip_reasoning_block(raw)
         json_str = extract_json(cleaned)
         data: dict[str, Any] = json.loads(json_str)
+        data = fix_latex_delimiters(data)
     except (json.JSONDecodeError, ValueError) as exc:
         logger.error("Brain Mode JSON parse error. Raw response: %s", raw[:500])
         raise ValueError(f"Brain Mode LLM returned unparseable JSON: {exc}") from exc
