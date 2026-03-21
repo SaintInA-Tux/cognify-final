@@ -69,7 +69,7 @@ async def generate_sos_mode(
             subtopic=classification.subtopic,
             difficulty=classification.difficulty.value,
         ),
-        max_tokens=2048,
+        max_tokens=4096,  # Increased for long step-by-step solutions
         temperature=0.0,
         model=settings.fast_model if classification.difficulty.value in ["easy", "medium"] else settings.deepseek_model,
     )

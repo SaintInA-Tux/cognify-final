@@ -54,11 +54,22 @@ def strip_reasoning_block(raw: str) -> str:
     return cleaned.strip()
 
 
+def repair_json_string(raw_json: str) -> str:
+    """
+    LLMs often forget to escape backslashes in JSON strings (e.g. they write "\alpha"
+    instead of "\\alpha"). This function attempts to escape backslashes that are 
+    part of common LaTeX commands or just stray, if they are not already escaped.
+    """
+    # Simple heuristic: find a backslash not preceded by another backslash, 
+    # except when it's an escaping sequence like \" or \n (not comprehensive).
+    # This is a 'best effort' repair for math content.
+    return re.sub(r'(?<!\\)\\(?![\\/bfnrtu"])', r'\\\\', raw_json)
+
+
 def extract_json(text: str) -> str:
     """
     Extract the first complete JSON object from text.
-    Handles cases where the model wraps output in ```json ... ``` fences
-    despite being explicitly told not to.
+    Handles cases where the model wraps output in ```json ... ``` fences.
     """
     # Remove fences
     text = re.sub(r"```(?:json)?", "", text).strip()
@@ -76,7 +87,19 @@ def extract_json(text: str) -> str:
         elif char == "}":
             depth -= 1
             if depth == 0:
-                return text[start : i + 1]
+                json_candidate = text[start : i + 1]
+                # Try simple parse
+                try:
+                    json.loads(json_candidate)
+                    return json_candidate
+                except json.JSONDecodeError:
+                    # Try repair
+                    repaired = repair_json_string(json_candidate)
+                    try:
+                        json.loads(repaired)
+                        return repaired
+                    except json.JSONDecodeError:
+                        return json_candidate  # return original, let caller handle final error
 
     raise ValueError(f"Malformed JSON in LLM response. Raw: {text[:200]}")
 
