@@ -135,6 +135,8 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
           setPreviousSteps(prev => [...prev, userMsg]);
           setCurrentStepNumber(prev => prev + 1);
         } else {
+          // If the AI says it's unrelated to the current problem (conceptual error about the topic itself),
+          // we might want to warn the user or allow them to break out.
           responseText = `❌ **Incorrect**\n\n**Error Type:** \`${data.error_type || "conceptual"}\`\n\n${data.explanation || ""}`;
           if (data.corrective_guidance) {
             responseText += `\n\n💡 *Direction:* ${data.corrective_guidance}`;
@@ -153,11 +155,19 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
           setPreviousSteps([]);
           setHintLevel(1);
           setHasUsedAllHints(false);
+
+          // Use the same pedagogical labeling as the backend
+          const isConceptual = data.pattern.toLowerCase().includes('conceptual') || data.pattern.toLowerCase().includes('theory');
+          const pLabel = isConceptual ? "The Big Idea" : "Pattern";
+          const mLabel = isConceptual ? "Core Principle" : "Method";
+          const sLabel = isConceptual ? "Context" : "Setup";
+          const fLabel = isConceptual ? "Next Step" : "First Step";
+
           responseText = [
-            `**Pattern:** ${data.pattern}`,
-            `**Method:** ${data.method}`,
-            `**Setup:** ${data.setup}`,
-            `**First Step:** ${data.first_step}`,
+            `**${pLabel}:** ${data.pattern}`,
+            `**${mLabel}:** ${data.method}`,
+            `**${sLabel}:** ${data.setup}`,
+            `**${fLabel}:** ${data.first_step}`,
           ].join('\n\n');
         } else {
           // SOS Mode
@@ -182,13 +192,6 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
     } finally {
       setIsLoading(false);
       abortControllerRef.current = null;
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
     }
   };
 
@@ -394,6 +397,18 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
                           className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-red-900/30 text-red-400 border border-red-800/50 shadow-lg flex items-center gap-1.5 whitespace-nowrap"
                         >
                           <Lightbulb size={12} /> Solution
+                        </button>
+                        <button 
+                          onClick={() => {
+                            setActiveAttemptId(null);
+                            setHasUsedAllHints(false);
+                            setPreviousSteps([]);
+                            setCurrentStepNumber(1);
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 flex items-center gap-1.5"
+                          title="Finish this question and start a new one"
+                        >
+                          <X size={12} /> Clear
                         </button>
                       </div>
                     ) : (
