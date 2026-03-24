@@ -104,15 +104,22 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
   const chatGroups = groupChats(chats);
 
   return (
-    <div style={{
-      width: collapsed ? 80 : 280, height: '100%', display: 'flex', flexDirection: 'column',
-      background: 'rgba(5,5,5,.95)',
-      backdropFilter: 'blur(40px)',
-      borderRight: '1px solid var(--bdr)',
-      padding: collapsed ? '16px 12px' : 16, zIndex: 20, flexShrink: 0,
-      transition: 'width 0.3s ease-in-out',
-      overflow: 'hidden'
-    }}>
+    <div 
+      className="sidebar-container"
+      style={{
+        width: '100%',
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        background: 'rgba(5,5,5,.95)',
+        backdropFilter: 'blur(40px)',
+        borderRight: '1px solid var(--bdr)',
+        padding: collapsed ? '16px 12px' : 16, 
+        zIndex: 20, 
+        flexShrink: 0,
+        overflow: 'hidden'
+      }}
+    >
 
       {/* Brand & Toggle */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, padding: '4px 0' }}>

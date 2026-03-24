@@ -27,12 +27,12 @@ export default function AuthPage() {
   };
 
   return (
-    <div style={{ height: '100vh', background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif", display: 'flex', overflow: 'hidden', cursor: 'none' }}>
+    <div className="auth-page" style={{ height: '100vh', background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif", display: 'flex', overflow: 'hidden' }}>
       <PhiCursor />
 
       {/* LEFT PANEL */}
-      <div style={{ width: 420, flexShrink: 0, background: 'var(--s1)', borderRight: '1px solid var(--bdr)', display: 'flex', flexDirection: 'column', overflowY: 'auto', scrollbarWidth: 'none' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', padding: '36px 40px 40px' }}>
+      <div className="auth-left" style={{ width: '100%', maxWidth: 420, flexShrink: 0, background: 'var(--s1)', borderRight: '1px solid var(--bdr)', display: 'flex', flexDirection: 'column', overflowY: 'auto', scrollbarWidth: 'none' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100%', padding: '36px 24px 40px' }}>
 
           {/* Logo */}
           <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 22, fontWeight: 600, color: 'var(--thi)', letterSpacing: '.03em', display: 'flex', alignItems: 'center', gap: 10, marginBottom: 40 }}>
@@ -112,7 +112,7 @@ export default function AuthPage() {
       </div>
 
       {/* RIGHT PANEL */}
-      <div style={{ flex: 1, background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, position: 'relative', overflow: 'hidden' }}>
+      <div className="auth-right" style={{ flex: 1, background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 40, position: 'relative', overflow: 'hidden' }}>
         {/* Grid bg */}
         <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px)', backgroundSize: '44px 44px', pointerEvents: 'none' }} />
         <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 70% 60% at 50% 50%, transparent 0%, var(--bg) 100%)', pointerEvents: 'none' }} />
@@ -132,8 +132,11 @@ export default function AuthPage() {
       </div>
 
       <style>{`
-        @media(max-width:768px){ .auth-right{ display:none!important; } }
-        @media(max-width:480px){ div[style*='cursor: none']{ cursor: auto!important; } }
+        @media(max-width:768px){
+          .auth-right { display: none!important; }
+          .auth-left { max-width: 100%!important; border-right: none!important; }
+          .auth-page { cursor: auto!important; }
+        }
       `}</style>
     </div>
   );

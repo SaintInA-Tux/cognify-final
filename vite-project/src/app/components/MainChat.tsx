@@ -243,7 +243,7 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick, isSidebarCo
       {/* LEFT: Chat Column */}
       <div className="chat-col">
         {/* New Pro Header */}
-        <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: '0 24px', borderBottom: '1px solid var(--bdr)', background: 'rgba(5,5,5,0.8)', backdropFilter: 'blur(20px)', zIndex: 30 }}>
+        <div className="chat-header" style={{ height: 60, display: 'flex', alignItems: 'center', padding: '0 16px', borderBottom: '1px solid var(--bdr)', background: 'rgba(5,5,5,0.8)', backdropFilter: 'blur(20px)', zIndex: 30 }}>
           <button onClick={onMenuClick} className="p-2 text-tlo hover:text-thi transition-colors md:hidden mr-2">
             <Menu size={20}/>
           </button>

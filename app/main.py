@@ -58,20 +58,6 @@ app = FastAPI(
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:5174",
-        "https://phyprep-final.vercel.app",
-        "https://phyprep-final-saintina-tuxs-projects.vercel.app",
-        "https://phyprep-web.onrender.com",
-    ],
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["*"],
-)
-
 MAX_REQUEST_SIZE = 1048576 * 5  # 5 MB
 
 
@@ -85,6 +71,23 @@ async def limit_request_size(request: Request, call_next):
                 content={"detail": "Request body too large. Maximum size is 5 MB."},
             )
     return await call_next(request)
+
+
+# CORSMiddleware MUST be added LAST so it executes FIRST,
+# correctly handling preflight OPTIONS before other middleware.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://phyprep.vercel.app",
+        "https://phyprep-web.onrender.com",
+    ],
+    allow_origin_regex=r"https://.*\.vercel\.app",
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["*"],
+)
 
 
 @app.exception_handler(Exception)

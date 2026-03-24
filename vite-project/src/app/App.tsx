@@ -60,7 +60,7 @@ function ChatLayout() {
         )}
 
         {/* Sidebar */}
-        <div className={`fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:w-20' : 'md:w-[280px]'}`}>
+        <div className={`fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-all duration-300 ease-in-out w-[280px] ${isSidebarCollapsed ? 'md:w-20' : 'md:w-[280px]'}`}>
           <Sidebar
             activeChatId={activeChatId}
             refreshTrigger={refreshTrigger}
