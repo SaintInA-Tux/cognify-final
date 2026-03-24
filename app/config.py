@@ -15,20 +15,24 @@ class Settings(BaseSettings):
     secret_key: str = ""  # MUST be set in .env
 
     # Database
-    # Default: SQLite (zero setup, works on Windows with no install)
-    # For production: postgresql+asyncpg://user:pass@localhost:5432/cognify
-    database_url: str = "sqlite+aiosqlite:///./cognify.db"
+    database_url: str = "sqlite+aiosqlite:///./phyprep.db"
 
     # Redis
-    # Default: disabled — set to redis://localhost:6379/0 when Redis is running
     redis_url: str = "redis://localhost:6379/0"
-    redis_enabled: bool = False   # set to true in .env when Redis is running
+    redis_enabled: bool = False
 
-    # Models
-    deepseek_api_key: str = ""
-    deepseek_base_url: str = "https://api.deepseek.com"
-    deepseek_model: str = "deepseek-reasoner"
-    fast_model: str = "llama-3.3-70b-versatile"
+    # Groq — replaces DeepSeek entirely for prototype
+    groq_api_key: str = ""
+    groq_base_url: str = "https://api.groq.com/openai"
+    groq_model: str = "llama-3.3-70b-versatile"
+
+    @property
+    def fast_model(self) -> str:
+        return self.groq_model
+
+    @property
+    def deepseek_model(self) -> str:
+        return self.groq_model
 
     # MathPix
     mathpix_app_id: str = ""
@@ -37,6 +41,16 @@ class Settings(BaseSettings):
     # Cache TTLs (seconds)
     classification_cache_ttl: int = 86400
     hint_session_ttl: int = 3600
+
+    @property
+    def database_url_async(self) -> str:
+        """SQLAlchemy async engine expects postgresql+asyncpg:// but Render gives postgres://"""
+        url = self.database_url
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://") and "+asyncpg" not in url:
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
 
     @property
     def is_production(self) -> bool:
@@ -52,6 +66,5 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     settings = Settings()
-    # Validate critical settings on startup
     settings.validate_production_readiness()
     return settings

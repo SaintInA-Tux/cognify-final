@@ -166,6 +166,7 @@ async def _update_weakness_on_sos(
         return  # No WeaknessEntry yet — will be created on first step submission
 
     entry.sos_count = (entry.sos_count or 0) + 1
+    entry.total_attempts = (entry.total_attempts or 0) + 1  # BUG-20 FIX
     entry.last_attempted_at = datetime.now(timezone.utc)
     _recompute_status(entry)
     await db.flush()

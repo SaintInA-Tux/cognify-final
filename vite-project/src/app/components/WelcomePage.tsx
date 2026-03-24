@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Mail, Lock, User, ArrowRight, Loader2, Sparkles } from 'lucide-react';
 import { loginUser, registerUser, loginGuest } from '../../api';
 import { useAuth } from '../context/AuthContext';
-import { CognifyLogo } from './CognifyLogo';
+import { PhyPrepLogo } from './PhyPrepLogo';
 
 const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
@@ -82,7 +82,7 @@ const WelcomePage: React.FC = () => {
 
         <div className="relative z-10 flex flex-col gap-8 h-full">
           <div>
-            <CognifyLogo />
+            <PhyPrepLogo />
             <h1 className="mt-12 text-5xl md:text-6xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-gray-100 to-gray-500">
               Your AI Math <br />
               <span className="text-indigo-400">Thinking Engine.</span>

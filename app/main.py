@@ -1,9 +1,10 @@
 """
-Cognify Backend — V1 MVP
+PhyPrep Backend — V1 MVP
 FastAPI application entry point.
 """
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
@@ -16,7 +17,7 @@ from slowapi.errors import RateLimitExceeded
 from app.cache.redis_client import close_redis, get_redis
 from app.config import get_settings
 from app.database.db import create_tables
-from app.routes import ask, hints, practice, solution
+
 from app.utils.rate_limiter import limiter
 
 logging.basicConfig(
@@ -29,7 +30,7 @@ settings = get_settings()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    logger.info("Starting Cognify V1 backend...")
+    logger.info("Starting PhyPrep V1 backend...")
     await create_tables()
     logger.info("Database tables ready.")
     if settings.redis_enabled:
@@ -42,15 +43,15 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="Cognify API",
+    title="PhyPrep API",
     description=(
         "The AI Math Thinking Engine for JEE Aspirants. "
         "V1 MVP — Brain Mode, SOS Mode, Progressive Hints, "
         "Mistake Detection, Weakness Dashboard."
     ),
     version="1.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url="/docs" if not (os.environ.get("APP_ENV") == "production") else None,
+    redoc_url="/redoc" if not (os.environ.get("APP_ENV") == "production") else None,
     lifespan=lifespan,
 )
 
@@ -59,17 +60,23 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:5174", "https://cognify-final.vercel.app", "https://cognify-final-saintina-tuxs-projects.vercel.app"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://phyprep-final.vercel.app",
+        "https://phyprep-final-saintina-tuxs-projects.vercel.app",
+        "https://phyprep-web.onrender.com",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 
-MAX_REQUEST_SIZE = 1048576 * 5  # 5 MB to allow for image uploads
+MAX_REQUEST_SIZE = 1048576 * 5  # 5 MB
+
 
 @app.middleware("http")
 async def limit_request_size(request: Request, call_next):
-    # This runs before reading the body, ensuring no unbounded buffering
     if request.headers.get("content-length"):
         content_length = int(request.headers.get("content-length", 0))
         if content_length > MAX_REQUEST_SIZE:
@@ -89,15 +96,16 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
     )
 
 
-from app.routes import ask, hints, practice, solution, auth, chats
 
-# ... (omitting existing router includes)
+from app.routes import ask, hints, practice, solution, auth, chats, challenge
+
 app.include_router(ask.router, prefix="/v1")
 app.include_router(hints.router, prefix="/v1")
 app.include_router(solution.router, prefix="/v1")
 app.include_router(practice.router, prefix="/v1")
 app.include_router(auth.router, prefix="/v1")
 app.include_router(chats.router, prefix="/v1")
+app.include_router(challenge.router, prefix="/v1")
 
 
 @app.get("/health", tags=["Meta"])
@@ -112,7 +120,8 @@ async def health() -> dict:
 
 @app.get("/", tags=["Meta"])
 async def root() -> dict:
-    return {"product": "Cognify", "version": "1.0.0", "docs": "/docs"}
+    return {"product": "PhyPrep", "version": "1.0.0", "docs": "/docs"}
+
 
 if __name__ == "__main__":
     import uvicorn

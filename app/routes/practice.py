@@ -1,7 +1,8 @@
 """
 Practice Route — F7 Weakness Tracking Dashboard
 
-GET /practice/dashboard/{student_id}
+GET /practice/dashboard
+  - Secured: uses authenticated user's ID (no student_id in path)
   - Returns the student's full weakness map
   - Red / Yellow / Green per topic
   - Accuracy, hint dependency, SOS rates
@@ -9,15 +10,14 @@ GET /practice/dashboard/{student_id}
 """
 
 import logging
-import uuid
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.db import get_db
-from app.database.models import WeaknessEntry
+from app.database.models import Student, WeaknessEntry
 from app.database.schemas import (
     ErrorResponse,
     Subject,
@@ -25,32 +25,36 @@ from app.database.schemas import (
     WeaknessDashboardResponse,
     WeaknessStatus,
 )
+from app.utils.auth_middleware import get_current_user
+from app.utils.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
 @router.get(
-    "/practice/dashboard/{student_id}",
+    "/practice/dashboard",  # FIX: removed {student_id} from path — use auth token instead
     response_model=WeaknessDashboardResponse,
     responses={404: {"model": ErrorResponse}},
     summary="Weakness Dashboard — full topic performance breakdown (F7)",
     tags=["Dashboard"],
 )
+@limiter.limit("30/minute")
 async def get_dashboard(
-    student_id: uuid.UUID,
+    request: Request,
+    current_user: Student = Depends(get_current_user),  # FIX: added auth — was completely missing
     db: AsyncSession = Depends(get_db),
 ) -> WeaknessDashboardResponse:
     """
-    Returns the student's weakness map across all topics they've attempted.
+    Returns the authenticated student's weakness map.
 
     Status meanings:
     - Red    (accuracy < 50%)  — needs focused practice
     - Yellow (accuracy 50–74%) — improving, keep going
-    - Green  (accuracy ≥ 75%, sos < 20%) — strong topic
-
-    Recommendation is generated from the worst-performing active topic.
+    - Green  (accuracy >= 75%, sos < 20%) — strong topic
     """
+    student_id = current_user.id  # always use the authenticated user's ID
+
     result = await db.execute(
         select(WeaknessEntry)
         .where(WeaknessEntry.student_id == student_id)
@@ -61,7 +65,7 @@ async def get_dashboard(
     if not entries:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"No practice data found for student {student_id}. Submit a problem first.",
+            detail="No practice data yet. Submit a problem first to build your weakness map.",
         )
 
     weakest = []
@@ -114,12 +118,8 @@ def _build_recommendation(
     weakest: list[TopicWeakness],
     improving: list[TopicWeakness],
 ) -> str:
-    """
-    Generate a simple, actionable recommendation.
-    Prioritises the weakest red topic. Falls back to improving topics.
-    """
     if weakest:
-        worst = weakest[0]  # already sorted by accuracy asc
+        worst = weakest[0]
         return (
             f"Your weakest area is {worst.topic} ({worst.subject.value}) "
             f"at {worst.accuracy_pct}% accuracy. "

@@ -1,6 +1,5 @@
 """
 Pydantic v2 schemas — strict typed contracts for all API inputs and outputs.
-All AI responses are validated against these before being returned to clients.
 """
 
 from __future__ import annotations
@@ -65,10 +64,12 @@ class RegisterRequest(BaseModel):
     exam_board: str | None = None
     target_exam: str | None = None
 
+
 class LoginResponse(BaseModel):
     access_token: str
     token_type: str
     student_id: uuid.UUID
+
 
 class StudentProfile(BaseModel):
     id: uuid.UUID
@@ -77,6 +78,11 @@ class StudentProfile(BaseModel):
     level: str | None
     exam_board: str | None
     target_exam: str | None
+    daily_goal: int = 5          # NEW: needed by onboarding and settings
+    streak: int = 0              # NEW: consecutive days solved
+    onboarded: bool = False      # NEW: frontend checks this to decide whether to show onboarding
+    is_guest: bool = False       # NEW: frontend may show "save your progress" nudge for guests
+
 
 # ---------------------------------------------------------------------------
 # Chat
@@ -89,12 +95,12 @@ class ChatMessageResponse(BaseModel):
     mode: str | None
     created_at: datetime
 
+
 class ChatSessionResponse(BaseModel):
     id: uuid.UUID
     title: str
     created_at: datetime
     updated_at: datetime
-
 
 
 # ---------------------------------------------------------------------------
@@ -107,29 +113,29 @@ class ClassificationResult(BaseModel):
     subtopic: str = Field(..., min_length=2, max_length=100)
     difficulty: Difficulty
     pattern: str = Field(..., min_length=2, max_length=255)
+    formula: str | None = None
+    definition: str | None = None
     confidence: float = Field(..., ge=0.0, le=1.0)
 
     @field_validator("subject", mode="before")
     @classmethod
     def coerce_subject(cls, v: object) -> str:
-        """Accept any case variant the LLM returns, e.g. 'mathematics' → 'Mathematics'."""
         if isinstance(v, str):
-            normalised = v.strip().title()  # 'mathematics' → 'Mathematics'
+            normalised = v.strip().title()
             for member in Subject:
                 if member.value.lower() == normalised.lower():
                     return member.value
-        return v  # let Pydantic raise a clean error if still unrecognised
+        return v
 
     @field_validator("difficulty", mode="before")
     @classmethod
     def coerce_difficulty(cls, v: object) -> str:
-        """Accept any case variant the LLM returns, e.g. 'Easy' → 'easy'."""
         if isinstance(v, str):
             lowered = v.strip().lower()
             for member in Difficulty:
                 if member.value.lower() == lowered:
                     return member.value
-        return v  # let Pydantic raise a clean error if still unrecognised
+        return v
 
 
 # ---------------------------------------------------------------------------
@@ -137,11 +143,19 @@ class ClassificationResult(BaseModel):
 # ---------------------------------------------------------------------------
 
 class AskRequest(BaseModel):
-    # student_id is now taken from auth context, not the body, but keeping it optional for fallback/validation
-    student_id: uuid.UUID | None = None
+    student_id: uuid.UUID | None = None  # ignored — taken from auth context
     session_id: uuid.UUID | None = None
     problem: str = Field(..., min_length=3, max_length=4000)
     input_method: InputMethod = InputMethod.TEXT
+
+    @field_validator("problem")
+    @classmethod
+    def strip_problem(cls, v: str) -> str:
+        v = v.strip()
+        # SEC-08 FIX: strip prompt boundary markers to prevent injection
+        v = v.replace("<user_input>", "").replace("</user_input>", "")
+        return v
+
 
 class DirectAskRequest(BaseModel):
     student_id: uuid.UUID | None = None
@@ -152,42 +166,24 @@ class DirectAskRequest(BaseModel):
     @field_validator("problem")
     @classmethod
     def strip_problem(cls, v: str) -> str:
-        return v.strip()
+        v = v.strip()
+        # SEC-08 FIX: strip prompt boundary markers to prevent injection
+        v = v.replace("<user_input>", "").replace("</user_input>", "")
+        return v
 
 
 # ---------------------------------------------------------------------------
 # F3 — Brain Mode
-# Fields match spec exactly: pattern, method, setup, first_step.
-# final_answer is intentionally absent — Brain Mode never carries it.
 # ---------------------------------------------------------------------------
 
 class BrainModeResponse(BaseModel):
     attempt_id: uuid.UUID
     classification: ClassificationResult
-
-    pattern: str = Field(
-        ...,
-        description="What type of structure this problem has and what makes it recognisable",
-    )
-    method: str = Field(
-        ...,
-        description="Which method applies AND why — including why alternatives are rejected",
-    )
-    setup: str = Field(
-        ...,
-        description="How to set up the problem before any calculation — what to write first",
-    )
-    first_step: str = Field(
-        ...,
-        description="The single specific first operation the student should perform",
-    )
-
-    # Explicit contract: Brain Mode never contains an answer.
-    # This field is always True — its presence makes the contract visible in the API schema.
-    answer_withheld: bool = Field(
-        default=True,
-        description="Always True — Brain Mode never reveals the answer",
-    )
+    pattern: str
+    method: str
+    setup: str
+    first_step: str
+    answer_withheld: bool = Field(default=True)
 
 
 # ---------------------------------------------------------------------------
@@ -196,8 +192,8 @@ class BrainModeResponse(BaseModel):
 
 class SolutionStep(BaseModel):
     step_number: int
-    expression: str = Field(..., description="The mathematical expression or operation")
-    explanation: str = Field(..., description="Plain English reasoning for this step")
+    expression: str
+    explanation: str
 
 
 class SOSModeResponse(BaseModel):
@@ -236,7 +232,9 @@ class StepCheckRequest(BaseModel):
     attempt_id: uuid.UUID
     step_number: int = Field(..., ge=1)
     student_step: str = Field(..., min_length=1, max_length=2000)
-    previous_steps: list[Annotated[str, Field(max_length=2000)]] = Field(default_factory=list, max_length=20)
+    previous_steps: list[Annotated[str, Field(max_length=2000)]] = Field(
+        default_factory=list, max_length=20
+    )
 
 
 class StepCheckResponse(BaseModel):
@@ -244,12 +242,9 @@ class StepCheckResponse(BaseModel):
     step_number: int
     is_correct: bool
     error_type: ErrorType | None = None
-    explanation: str | None = None          # what went wrong and why (null if correct)
-    corrective_guidance: str | None = None  # nudge toward fix without giving answer
-    correct_step: str | None = Field(
-        default=None,
-        description="Only provided after 2 consecutive wrong attempts on the same step",
-    )
+    explanation: str | None = None
+    corrective_guidance: str | None = None
+    correct_step: str | None = None
 
 
 # ---------------------------------------------------------------------------
@@ -261,14 +256,8 @@ class TopicWeakness(BaseModel):
     topic: str
     total_attempts: int
     accuracy_pct: int = Field(..., ge=0, le=100)
-    hints_dependency_pct: int = Field(
-        ..., ge=0, le=100,
-        description="Percentage of attempts where hints were needed"
-    )
-    sos_pct: int = Field(
-        ..., ge=0, le=100,
-        description="Percentage of attempts that ended in SOS"
-    )
+    hints_dependency_pct: int = Field(..., ge=0, le=100)
+    sos_pct: int = Field(..., ge=0, le=100)
     status: WeaknessStatus
     last_attempted_at: datetime | None
 
@@ -276,10 +265,41 @@ class TopicWeakness(BaseModel):
 class WeaknessDashboardResponse(BaseModel):
     student_id: uuid.UUID
     generated_at: datetime
-    weakest_topics: list[TopicWeakness]  # sorted by accuracy_pct asc
+    weakest_topics: list[TopicWeakness]
     improving_topics: list[TopicWeakness]
     strong_topics: list[TopicWeakness]
     recommendation: str
+
+
+# ---------------------------------------------------------------------------
+# Daily Challenge
+# ---------------------------------------------------------------------------
+
+class ChallengeOption(BaseModel):
+    key: str   # "A", "B", "C", "D"
+    text: str
+
+
+class ChallengeProblemResponse(BaseModel):
+    challenge_date: str        # "2026-03-23"
+    subject: str
+    topic: str
+    difficulty: str
+    problem_text: str
+    options: list[ChallengeOption]
+    already_attempted: bool    # True if this student already submitted today
+
+
+class ChallengeSubmitRequest(BaseModel):
+    answer: str = Field(..., min_length=1, max_length=1)  # "A", "B", "C", or "D"
+    time_taken_seconds: int | None = None
+
+
+class ChallengeSubmitResponse(BaseModel):
+    is_correct: bool
+    correct_answer: str
+    explanation: str
+    your_answer: str
 
 
 # ---------------------------------------------------------------------------

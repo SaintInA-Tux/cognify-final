@@ -1,4 +1,4 @@
-# Cognify Backend — V1 MVP
+# PhyPrep Backend — V1 MVP
 
 > The AI Math Thinking Engine for JEE Aspirants
 

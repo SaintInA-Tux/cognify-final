@@ -1,11 +1,9 @@
 /**
- * Cognify API Layer
- *
- * Communicates with the FastAPI backend at /v1/*.
- * In development, requests to /api are proxied to localhost:8000 by Vite.
+ * PhyPrep API Layer
+ * All backend communication goes through this file.
  */
 
-// ── Types matching backend Pydantic schemas ────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────
 
 export interface ClassificationResult {
   subject: "Mathematics" | "Physics" | "Chemistry";
@@ -71,6 +69,10 @@ export interface StudentProfile {
   level: string | null;
   exam_board: string | null;
   target_exam: string | null;
+  daily_goal: number;       // NEW
+  streak: number;           // NEW: consecutive days solved
+  onboarded: boolean;       // NEW — frontend uses this to decide whether to show onboarding
+  is_guest: boolean;        // NEW
 }
 
 export interface LoginResponse {
@@ -88,197 +90,104 @@ export interface ChatSession {
 
 export interface ChatMessage {
   id: string;
-  session_id: string;
-  role: 'user' | 'assistant';
+  role: "user" | "assistant";
   content: string;
+  mode: string | null;
   created_at: string;
 }
 
-// ── Config ──────────────────────────────────────────────────────────────
+export interface ChallengeOption {
+  key: string;
+  text: string;
+}
 
-// Point directly to the live Render backend permanently
-const BASE_URL = "https://cognify-api-56et.onrender.com/v1";
+export interface ChallengeProblemResponse {
+  challenge_date: string;
+  subject: string;
+  topic: string;
+  difficulty: string;
+  problem_text: string;
+  options: ChallengeOption[];
+  already_attempted: boolean;
+}
 
-// Fixed test student UUID — replace with real auth later
-const TEST_STUDENT_ID = "00000000-0000-4000-8000-000000000001";
+export interface ChallengeSubmitResponse {
+  is_correct: boolean;
+  correct_answer: string;
+  explanation: string;
+  your_answer: string;
+}
 
-// ── Helpers ─────────────────────────────────────────────────────────────
+// ── Config ────────────────────────────────────────────────────────────────
+
+// FIX: use env var so dev hits localhost, production hits Render
+// In .env.local: VITE_API_URL=http://localhost:8000/v1
+// In Vercel dashboard: VITE_API_URL=https://phyprep-api-56et.onrender.com/v1
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000/v1";
+
+// ── Core fetch helper ─────────────────────────────────────────────────────
 
 async function apiFetch<T>(url: string, options: RequestInit = {}): Promise<T> {
-  const token = localStorage.getItem('cognify_token');
-  const headers: HeadersInit = {
-    ...options.headers,
-    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+  const token = localStorage.getItem("phyprep_token");
+
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string>),
   };
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-  });
+  // Don't set Content-Type for FormData — browser sets it with boundary
+  if (!(options.body instanceof FormData)) {
+    headers["Content-Type"] = "application/json";
+  }
+
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const response = await fetch(url, { ...options, headers });
 
   if (response.status === 401 || response.status === 403) {
-    localStorage.removeItem('cognify_token');
-    window.dispatchEvent(new Event('auth-token-expired'));
-    // Do not throw an error here, wait for the app to redirect.
+    localStorage.removeItem("phyprep_token");
+    localStorage.removeItem("phyprep_student_id");
+    window.dispatchEvent(new Event("auth-token-expired"));
+    throw new Error("Session expired. Please sign in again.");
   }
 
   if (!response.ok) {
-    let errMessage = 'Network response was not ok';
+    let errMessage = `Request failed (${response.status})`;
     try {
-      const errBody = await response.json();
-      errMessage = errBody.detail || errMessage;
-    } catch (e) { }
+      const body = await response.json();
+      errMessage = body.detail || errMessage;
+    } catch {
+      // response wasn't JSON — keep the default message
+    }
     throw new Error(errMessage);
   }
+
   return response.json() as Promise<T>;
 }
 
-// ── Endpoints ───────────────────────────────────────────────────────────
+// ── Auth ──────────────────────────────────────────────────────────────────
 
-/**
- * POST /v1/ask — Submit a text problem.
- * Returns BrainModeResponse.
- */
-export async function askQuestion(problem: string, session_id?: string, signal?: AbortSignal): Promise<BrainModeResponse> {
-  return await apiFetch<BrainModeResponse>(`${BASE_URL}/ask`, {
+export async function loginGuest(): Promise<LoginResponse> {
+  const res = await apiFetch<LoginResponse>(`${BASE_URL}/auth/guest`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      problem,
-      session_id: session_id || null,
-      input_method: "text"
-    }),
-    signal,
   });
-}
-
-/**
- * POST /v1/ask/direct — Quick solve, returns SOSModeResponse.
- */
-export async function askDirect(problem: string, session_id?: string, signal?: AbortSignal): Promise<any> {
-  return await apiFetch<any>(`${BASE_URL}/ask/direct`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      problem,
-      session_id: session_id || null,
-    }),
-    signal,
-  });
-}
-
-export async function checkStep(
-  attemptId: string,
-  stepNumber: number,
-  studentStep: string,
-  previousSteps: string[]
-): Promise<StepCheckResponse> {
-  return await apiFetch<StepCheckResponse>(`${BASE_URL}/solution/check-step`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      attempt_id: attemptId,
-      step_number: stepNumber,
-      student_step: studentStep,
-      previous_steps: previousSteps,
-    }),
-  });
-}
-
-/**
- * POST /v1/solution/sos — Request final solution for an active attempt.
- */
-export async function getSos(attemptId: string): Promise<any> {
-  return await apiFetch<any>(`${BASE_URL}/solution/sos`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      attempt_id: attemptId
-    }),
-  });
-}
-
-/**
- * POST /v1/hints — Request the next progressive hint.
- */
-export async function getHints(
-  attemptId: string,
-  requestedLevel: number = 1,
-): Promise<HintResponse> {
-  try {
-    return await apiFetch<HintResponse>(`${BASE_URL}/hints`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        attempt_id: attemptId,
-        requested_level: requestedLevel,
-      }),
-    });
-  } catch (error) {
-    console.warn("Hints endpoint error:", error);
-    return {
-      attempt_id: attemptId,
-      hint_level: requestedLevel,
-      hint_text: "Hint unavailable — backend may be offline.",
-      is_final_hint: false,
-      next_hint_available: true,
-    };
-  }
-}
-
-/**
- * GET /v1/practice/dashboard/{student_id} — Weakness dashboard.
- */
-export async function getDashboard(
-  studentId: string = TEST_STUDENT_ID,
-): Promise<DashboardResponse> {
-  try {
-    return await apiFetch<DashboardResponse>(
-      `${BASE_URL}/practice/dashboard/${studentId}`,
-    );
-  } catch (error) {
-    console.warn("Dashboard endpoint error:", error);
-    return {
-      student_id: studentId,
-      generated_at: new Date().toISOString(),
-      weakest_topics: [],
-      improving_topics: [],
-      strong_topics: [],
-      recommendation: "Dashboard unavailable — backend may be offline.",
-    };
-  }
-}
-
-// ── Auth Endpoints ──────────────────────────────────────────────────────
-
-export async function loginUser(email: string, password: string): Promise<LoginResponse> {
-  const params = new URLSearchParams();
-  params.append("username", email);
-  params.append("password", password);
-  
-  const res = await fetch(`${BASE_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params,
-  });
-  if (!res.ok) {
-    const body = await res.text();
-    throw new Error(`Login failed: ${body}`);
-  }
-  return res.json() as Promise<LoginResponse>;
+  // Store token immediately after any auth call
+  localStorage.setItem("phyprep_token", res.access_token);
+  localStorage.setItem("phyprep_student_id", res.student_id);
+  return res;
 }
 
 export async function registerUser(
-  email: string, 
-  password: string, 
+  email: string,
+  password: string,
   name: string,
   level?: string,
   examBoard?: string,
   targetExam?: string
 ): Promise<LoginResponse> {
-  return await apiFetch<LoginResponse>(`${BASE_URL}/auth/register`, {
+  const res = await apiFetch<LoginResponse>(`${BASE_URL}/auth/register`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       email,
       password,
@@ -288,44 +197,209 @@ export async function registerUser(
       target_exam: targetExam || null,
     }),
   });
+  localStorage.setItem("phyprep_token", res.access_token);
+  localStorage.setItem("phyprep_student_id", res.student_id);
+  return res;
 }
 
-export async function loginGuest(): Promise<LoginResponse> {
-  return await apiFetch<LoginResponse>(`${BASE_URL}/auth/guest`, {
+export async function loginUser(email: string, password: string): Promise<LoginResponse> {
+  // Login uses form-encoded body (OAuth2PasswordRequestForm on backend)
+  const params = new URLSearchParams();
+  params.append("username", email);
+  params.append("password", password);
+
+  const response = await fetch(`${BASE_URL}/auth/login`, {
     method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: params,
   });
+
+  if (!response.ok) {
+    let errMessage = "Login failed";
+    try {
+      const body = await response.json();
+      errMessage = body.detail || errMessage;
+    } catch { /* ignore */ }
+    throw new Error(errMessage);
+  }
+
+  const res = (await response.json()) as LoginResponse;
+  localStorage.setItem("phyprep_token", res.access_token);
+  localStorage.setItem("phyprep_student_id", res.student_id);
+  return res;
+}
+
+export function logout(): void {
+  localStorage.removeItem("phyprep_token");
+  localStorage.removeItem("phyprep_student_id");
+}
+
+export function getStoredToken(): string | null {
+  return localStorage.getItem("phyprep_token");
+}
+
+export function getStoredStudentId(): string | null {
+  return localStorage.getItem("phyprep_student_id");
 }
 
 export async function getMe(): Promise<StudentProfile> {
-  return await apiFetch<StudentProfile>(`${BASE_URL}/auth/me`, {
-    method: "GET",
+  return apiFetch<StudentProfile>(`${BASE_URL}/auth/me`);
+}
+
+export async function updateProfile(data: {
+  name?: string;
+  level?: string;
+  exam_board?: string;
+  target_exam?: string;
+  daily_goal?: number;
+  onboarded?: boolean;
+}): Promise<StudentProfile> {
+  return apiFetch<StudentProfile>(`${BASE_URL}/auth/profile`, {
+    method: "PUT",
+    body: JSON.stringify(data),
   });
 }
 
-// ── Chat Endpoints ──────────────────────────────────────────────────────
+// ── Ask ───────────────────────────────────────────────────────────────────
+
+export async function askQuestion(
+  problem: string,
+  sessionId?: string,
+  signal?: AbortSignal
+): Promise<BrainModeResponse> {
+  return apiFetch<BrainModeResponse>(`${BASE_URL}/ask`, {
+    method: "POST",
+    body: JSON.stringify({
+      problem,
+      session_id: sessionId || null,
+      input_method: "text",
+    }),
+    signal,
+  });
+}
+
+export async function askDirect(
+  problem: string,
+  sessionId?: string,
+  signal?: AbortSignal
+): Promise<any> {
+  return apiFetch<any>(`${BASE_URL}/ask/direct`, {
+    method: "POST",
+    body: JSON.stringify({
+      problem,
+      session_id: sessionId || null,
+    }),
+    signal,
+  });
+}
+
+export async function askImage(
+  imageFile: File,
+  sessionId?: string
+): Promise<BrainModeResponse> {
+  const form = new FormData();
+  form.append("image", imageFile);
+  if (sessionId) form.append("session_id", sessionId);
+
+  return apiFetch<BrainModeResponse>(`${BASE_URL}/ask/image`, {
+    method: "POST",
+    body: form, // no Content-Type header — apiFetch skips it for FormData
+  });
+}
+
+// ── Hints ─────────────────────────────────────────────────────────────────
+
+export async function getHint(
+  attemptId: string,
+  requestedLevel: number
+): Promise<HintResponse> {
+  // FIX: don't swallow errors — let caller handle them
+  return apiFetch<HintResponse>(`${BASE_URL}/hints`, {
+    method: "POST",
+    body: JSON.stringify({
+      attempt_id: attemptId,
+      requested_level: requestedLevel,
+    }),
+  });
+}
+
+// ── Solution ──────────────────────────────────────────────────────────────
+
+export async function getSos(attemptId: string): Promise<any> {
+  return apiFetch<any>(`${BASE_URL}/solution/sos`, {
+    method: "POST",
+    body: JSON.stringify({ attempt_id: attemptId }),
+  });
+}
+
+export async function checkStep(
+  attemptId: string,
+  stepNumber: number,
+  studentStep: string,
+  previousSteps: string[]
+): Promise<StepCheckResponse> {
+  return apiFetch<StepCheckResponse>(`${BASE_URL}/solution/check-step`, {
+    method: "POST",
+    body: JSON.stringify({
+      attempt_id: attemptId,
+      step_number: stepNumber,
+      student_step: studentStep,
+      previous_steps: previousSteps,
+    }),
+  });
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────
+
+export async function getDashboard(): Promise<DashboardResponse> {
+  // FIX: no student_id in URL — backend uses auth token now
+  // FIX: don't swallow errors silently
+  return apiFetch<DashboardResponse>(`${BASE_URL}/practice/dashboard`);
+}
+
+// ── Chats ─────────────────────────────────────────────────────────────────
 
 export async function getChats(): Promise<ChatSession[]> {
-  return await apiFetch<ChatSession[]>(`${BASE_URL}/chats`, {
-    method: "GET",
+  return apiFetch<ChatSession[]>(`${BASE_URL}/chats`);
+}
+
+export async function createChat(title = "New Chat"): Promise<ChatSession> {
+  return apiFetch<ChatSession>(`${BASE_URL}/chats`, {
+    method: "POST",
+    body: JSON.stringify({ title }),
   });
 }
 
-export async function createChat(title: string): Promise<ChatSession> {
-  return await apiFetch<ChatSession>(`${BASE_URL}/chats`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
+export async function renameChat(chatId: string, title: string): Promise<ChatSession> {
+  return apiFetch<ChatSession>(`${BASE_URL}/chats/${chatId}`, {
+    method: "PATCH",
     body: JSON.stringify({ title }),
   });
 }
 
 export async function deleteChat(chatId: string): Promise<void> {
-  await apiFetch<void>(`${BASE_URL}/chats/${chatId}`, {
-    method: "DELETE",
-  });
+  await apiFetch<void>(`${BASE_URL}/chats/${chatId}`, { method: "DELETE" });
 }
 
 export async function getChatMessages(chatId: string): Promise<ChatMessage[]> {
-  return await apiFetch<ChatMessage[]>(`${BASE_URL}/chats/${chatId}/messages`, {
-    method: "GET",
+  return apiFetch<ChatMessage[]>(`${BASE_URL}/chats/${chatId}/messages`);
+}
+
+// ── Daily Challenge ───────────────────────────────────────────────────────
+
+export async function getTodayChallenge(): Promise<ChallengeProblemResponse> {
+  return apiFetch<ChallengeProblemResponse>(`${BASE_URL}/challenge/today`);
+}
+
+export async function submitChallenge(
+  answer: string,
+  timeTakenSeconds?: number
+): Promise<ChallengeSubmitResponse> {
+  return apiFetch<ChallengeSubmitResponse>(`${BASE_URL}/challenge/submit`, {
+    method: "POST",
+    body: JSON.stringify({
+      answer,
+      time_taken_seconds: timeTakenSeconds ?? null,
+    }),
   });
 }

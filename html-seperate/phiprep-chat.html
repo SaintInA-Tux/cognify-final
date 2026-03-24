@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhiPrep</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=DM+Mono:wght@400;500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    /* Black & white palette — pure, premium, high contrast */
+    --bg:      #0a0a0a;
+    --s1:      #0f0f0f;
+    --s2:      #161616;
+    --s3:      #1e1e1e;
+    --s4:      #252525;
+    --s5:      #2e2e2e;
+    --s6:      #383838;
+
+    --thi:     #f0f0f0;
+    --tmd:     #a8a8a8;
+    --tlo:     #606060;
+    --tdm:     #363636;
+
+    --accent:  #ffffff;
+    --acc-soft: rgba(255,255,255,0.06);
+    --acc-mid:  rgba(255,255,255,0.12);
+
+    --bdr:     rgba(255,255,255,0.08);
+    --bdrhi:   rgba(255,255,255,0.16);
+    --bdr2:    rgba(255,255,255,0.22);
+
+    --danger:  #e05040;
+    --dsoft:   rgba(224,80,64,0.10);
+
+    --card:    #111111;
+  }
+
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html, body { height:100%; }
+
+  body {
+    background: var(--bg);
+    color: var(--thi);
+    font-family: 'Jost', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ══ NAV ══════════════════════════════════════════════════ */
+  nav {
+    height: 50px;
+    background: rgba(10,10,10,0.97);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--bdr);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    gap: 12px;
+    flex-shrink: 0;
+    z-index: 10;
+  }
+
+  .ham {
+    width: 36px; height: 36px;
+    border-radius: 10px;
+    background: transparent;
+    border: 1px solid var(--bdr);
+    cursor: pointer;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 4.5px; flex-shrink: 0;
+    transition: background .2s, border-color .2s;
+  }
+  .ham:hover { background: var(--acc-soft); border-color: var(--bdrhi); }
+  .ham .b {
+    display: block; width: 14px; height: 1.5px;
+    background: var(--tmd); border-radius: 2px;
+    transition: transform .3s cubic-bezier(.68,-.6,.32,1.6), opacity .18s, width .2s;
+    transform-origin: center;
+  }
+  .ham.open .b:nth-child(1) { transform: translateY(6px) rotate(45deg); }
+  .ham.open .b:nth-child(2) { opacity:0; width:0; }
+  .ham.open .b:nth-child(3) { transform: translateY(-6px) rotate(-45deg); }
+
+  .nav-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 21px; font-weight: 600;
+    color: var(--thi); letter-spacing: .03em;
+    user-select: none;
+  }
+  .nav-logo em { color: var(--tmd); font-style: italic; }
+
+  .nav-sp { flex:1; }
+
+  .nav-link {
+    font-size: 11.5px; color: var(--tlo);
+    letter-spacing: .04em;
+    padding: 5px 14px;
+    border: 1px solid var(--bdr);
+    border-radius: 20px;
+    cursor: pointer;
+    background: none;
+    font-family: 'Jost', sans-serif;
+    transition: all .2s;
+  }
+  .nav-link:hover { color: var(--thi); border-color: var(--bdrhi); }
+
+  .nav-av {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--s5);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: var(--thi);
+    border: 1px solid var(--bdrhi); cursor: pointer;
+  }
+
+  /* ══ OVERLAY ════════════════════════════════════════════════ */
+  .overlay {
+    position: fixed; inset:0;
+    background: rgba(0,0,0,0.72);
+    backdrop-filter: blur(4px);
+    z-index: 200; opacity:0; pointer-events:none;
+    transition: opacity .3s;
+  }
+  .overlay.on { opacity:1; pointer-events:all; }
+
+  /* ══ DRAWER ══════════════════════════════════════════════════ */
+  .drawer {
+    position: fixed; top:0; left:0;
+    height:100vh; width:280px;
+    background: var(--s1);
+    border-right: 1px solid var(--bdrhi);
+    display: flex; flex-direction: column;
+    z-index: 201;
+    transform: translateX(-100%);
+    transition: transform .35s cubic-bezier(.4,0,.2,1);
+  }
+  .drawer.on { transform: translateX(0); }
+
+  .dr-head {
+    height:50px; display:flex; align-items:center;
+    padding:0 15px; border-bottom:1px solid var(--bdr);
+    gap:9px; flex-shrink:0;
+  }
+  .dr-title {
+    font-size:10px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.13em;
+    color:var(--tlo); flex:1;
+  }
+  .new-btn {
+    width:25px; height:25px; border-radius:7px;
+    background:var(--acc-soft); border:1px solid var(--bdrhi);
+    color:var(--thi); font-size:17px; line-height:1;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:all .2s;
+  }
+  .new-btn:hover { background:var(--s5); }
+
+  .streak {
+    display:flex; align-items:center; gap:6px;
+    padding:8px 15px; border-bottom:1px solid var(--bdr); flex-shrink:0;
+  }
+  .stk-lbl { font-size:10px; color:var(--tlo); }
+  .flame { font-size:12px; filter:saturate(0) brightness(.5); }
+  .flame.on { filter:none; }
+  .stk-ct { font-size:11px; font-weight:600; color:var(--thi); margin-left:2px; }
+
+  .dr-list {
+    flex:1; overflow-y:auto; padding:4px 7px;
+    scrollbar-width:thin; scrollbar-color:var(--bdr) transparent;
+  }
+  .dr-list::-webkit-scrollbar { width:3px; }
+  .dr-list::-webkit-scrollbar-thumb { background:var(--bdr); border-radius:3px; }
+
+  .sec-lbl {
+    font-size:9px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.14em;
+    color:var(--tdm); padding:10px 9px 4px;
+  }
+  .di {
+    padding:8px 11px; border-radius:9px; cursor:pointer;
+    border:1px solid transparent; margin-bottom:1px;
+    opacity:0; transform:translateX(-12px);
+    transition:background .17s, border-color .17s, opacity .28s ease, transform .28s ease;
+  }
+  .drawer.on .di { opacity:1; transform:translateX(0); }
+  .di:hover { background:var(--s3); border-color:var(--bdr); }
+  .di.act { background:var(--s4); border-color:var(--bdrhi); }
+  .di-top { display:flex; align-items:center; gap:5px; margin-bottom:2px; }
+  .di-dot {
+    width:4px; height:4px; border-radius:50%;
+    background:var(--thi); flex-shrink:0;
+  }
+  .di-title { font-size:12px; color:var(--tmd); font-weight:400; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .di.act .di-title { color:var(--thi); font-weight:500; }
+  .di-meta { display:flex; align-items:center; gap:5px; font-size:10px; color:var(--tlo); }
+  .di-tag {
+    padding:1px 6px; border-radius:9px;
+    background:var(--acc-soft); border:1px solid var(--bdr);
+    color:var(--tlo); font-size:9px; font-weight:500;
+  }
+
+  .dr-foot {
+    padding:11px 13px; border-top:1px solid var(--bdr);
+    display:flex; align-items:center; gap:9px; flex-shrink:0;
+  }
+  .foot-av {
+    width:27px; height:27px; border-radius:50%;
+    background:var(--s5); border:1px solid var(--bdrhi);
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; color:var(--thi);
+  }
+  .foot-info { flex:1; }
+  .foot-name { font-size:11.5px; font-weight:500; color:var(--thi); }
+  .foot-sub  { font-size:9.5px; color:var(--tlo); margin-top:1px; }
+  .foot-cog {
+    background:none; border:1px solid var(--bdr);
+    width:25px; height:25px; border-radius:7px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    color:var(--tlo); font-size:12px; transition:all .2s;
+  }
+  .foot-cog:hover { border-color:var(--bdrhi); color:var(--thi); }
+
+  /* ══ MAIN GRID ═══════════════════════════════════════════════ */
+  .main {
+    flex:1;
+    display: grid;
+    grid-template-columns: 2fr 3fr;
+    gap: 10px;
+    padding: 10px;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ── LEFT: Chat ── */
+  .chat-col {
+    display:flex; flex-direction:column;
+    background: var(--card);
+    border: 1px solid var(--bdr);
+    border-radius: 16px;
+    overflow: hidden; min-height:0;
+    animation: fadeUp .38s .04s ease both;
+  }
+
+  .msgs {
+    flex:1; overflow-y:auto;
+    padding: 14px 13px;
+    display:flex; flex-direction:column; gap:10px;
+    scrollbar-width:thin; scrollbar-color:var(--bdr) transparent;
+    min-height:0;
+  }
+  .msgs::-webkit-scrollbar { width:3px; }
+  .msgs::-webkit-scrollbar-thumb { background:var(--s5); border-radius:3px; }
+
+  .mr { display:flex; gap:7px; align-items:flex-start; animation:msgIn .25s ease both; }
+  .mr.u { flex-direction:row-reverse; }
+  @keyframes msgIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+  .mav {
+    width:26px; height:26px; border-radius:50%; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; margin-top:1px;
+  }
+  .mav.ai {
+    background: var(--thi);
+    color: var(--bg);
+    font-family:'Cormorant Garamond',serif;
+    font-size:14px; font-weight:600;
+  }
+  .mav.u { background:var(--s4); border:1px solid var(--bdr); color:var(--tmd); }
+
+  .bbl {
+    max-width:82%; padding:9px 13px;
+    font-size:12.5px; line-height:1.65; border-radius:13px;
+  }
+  .mr.ai .bbl {
+    background:var(--s2); border:1px solid var(--bdr);
+    color:var(--thi); border-top-left-radius:3px;
+  }
+  .mr.u .bbl {
+    background:var(--s4); border:1px solid var(--bdrhi);
+    color:var(--thi); border-top-right-radius:3px;
+  }
+
+  /* Brain card */
+  .bc {
+    margin-top:10px;
+    background:var(--bg);
+    border:1px solid var(--bdrhi);
+    border-radius:11px; padding:12px 14px;
+    position:relative; overflow:hidden;
+  }
+  .bc::before {
+    content:''; position:absolute; top:0;left:0;right:0; height:1.5px;
+    background: linear-gradient(90deg, transparent, var(--thi), transparent);
+    opacity:.25;
+  }
+  .bc-lbl {
+    font-size:9px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.14em;
+    color:var(--tmd); margin-bottom:9px;
+    display:flex; align-items:center; gap:6px;
+  }
+  .bc-lbl::after { content:''; flex:1; height:1px; background:var(--bdr); }
+  .stp { display:flex; gap:9px; margin-bottom:7px; align-items:flex-start; }
+  .stp:last-of-type { margin-bottom:0; }
+  .sn {
+    font-family:'DM Mono',monospace;
+    font-size:8.5px; color:var(--tdm);
+    min-width:16px; padding-top:3px; flex-shrink:0;
+  }
+  .st { font-size:12px; color:var(--tmd); line-height:1.55; }
+  .st b { color:var(--thi); font-weight:500; }
+  .wh {
+    text-align:center; font-size:10px; font-style:italic;
+    color:var(--tdm); margin-top:9px; padding-top:8px;
+    border-top:1px dashed var(--bdr);
+  }
+
+  /* Typing */
+  .tbbl {
+    display:flex; gap:4px; align-items:center;
+    padding:9px 12px; background:var(--s2);
+    border:1px solid var(--bdr); border-radius:13px;
+    border-top-left-radius:3px; width:fit-content;
+  }
+  .td { width:5px; height:5px; border-radius:50%; background:var(--tlo); animation:tda 1.3s infinite; }
+  .td:nth-child(2){animation-delay:.2s} .td:nth-child(3){animation-delay:.4s}
+  @keyframes tda{0%,70%,100%{opacity:.3;transform:scale(1)}35%{opacity:1;transform:scale(1.25)}}
+
+  /* Input */
+  .inp-bar {
+    padding: 10px 11px;
+    border-top: 1px solid var(--bdr);
+    background: var(--s1);
+    flex-shrink:0;
+    display:flex; flex-direction:column; gap:7px;
+  }
+  .inp-row {
+    display:flex; gap:7px; align-items:flex-end;
+    background:var(--s3); border:1px solid var(--bdr);
+    border-radius:13px; padding:6px 6px 6px 12px;
+    transition:border-color .22s, box-shadow .22s;
+  }
+  .inp-row:focus-within {
+    border-color:var(--bdrhi);
+    box-shadow:0 0 0 3px rgba(255,255,255,0.04);
+  }
+  .inp-icons { display:flex; gap:4px; align-items:center; }
+  .iico {
+    width:26px; height:26px; border-radius:8px;
+    background:none; border:1px solid var(--bdr);
+    color:var(--tlo); font-size:13px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    transition:all .18s; flex-shrink:0;
+  }
+  .iico:hover { border-color:var(--bdrhi); color:var(--thi); background:var(--acc-soft); }
+  .inp {
+    flex:1; background:none; border:none; outline:none;
+    color:var(--thi); font-family:'Jost',sans-serif;
+    font-size:12.5px; font-weight:300;
+    resize:none; height:32px; max-height:90px;
+    scrollbar-width:none; line-height:1.5; padding-top:4px;
+  }
+  .inp::placeholder { color:var(--tdm); }
+  .sbtn {
+    width:30px; height:30px; border-radius:9px;
+    background:var(--thi); border:none; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0; transition:opacity .18s, transform .14s;
+  }
+  .sbtn:hover { opacity:.82; transform:scale(1.05); }
+  .sbtn svg { width:13px; height:13px; fill:var(--bg); }
+  .sos-row { display:flex; justify-content:flex-end; }
+  .sos-btn {
+    background:none;
+    border:1px solid rgba(224,80,64,.22);
+    color:rgba(220,110,90,.55);
+    font-family:'Jost',sans-serif;
+    font-size:10px; padding:3px 11px;
+    border-radius:20px; cursor:pointer; transition:all .2s;
+  }
+  .sos-btn:hover { background:var(--dsoft); border-color:rgba(224,80,64,.45); color:#d07060; }
+
+  /* ══ RIGHT: 2×2 grid ══════════════════════════════════════════ */
+  .right-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 10px;
+    min-height:0; overflow:hidden;
+    animation: fadeUp .38s .10s ease both;
+  }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--bdr);
+    border-radius: 16px;
+    padding: 15px 16px;
+    display:flex; flex-direction:column;
+    overflow:hidden; min-height:0;
+  }
+
+  .card-hd {
+    font-size:13px; font-weight:600;
+    color:var(--thi); margin-bottom:11px;
+    letter-spacing:.01em;
+  }
+  .card-hd-line {
+    display:flex; align-items:center; gap:8px; margin-bottom:11px;
+  }
+  .card-hd-line .card-hd { margin-bottom:0; flex:1; }
+
+  /* Mode toggle */
+  .mode-tog {
+    display:flex; background:var(--s3);
+    border:1px solid var(--bdr);
+    border-radius:9px; padding:2px; gap:2px;
+  }
+  .mb {
+    font-family:'Jost',sans-serif; font-size:9px; font-weight:600;
+    letter-spacing:.08em; text-transform:uppercase;
+    padding:4px 9px; border-radius:6px; border:none; cursor:pointer;
+    transition:all .2s; color:var(--tlo); background:transparent;
+  }
+  .mb.brain.act {
+    background:var(--thi); color:var(--bg);
+  }
+  .mb.sos.act {
+    background:rgba(224,80,64,.18);
+    border:1px solid rgba(224,80,64,.35);
+    color:#e08070;
+  }
+
+  /* ── Concept Clarification ── */
+  .cc-meta { display:flex; flex-direction:column; gap:5px; margin-bottom:11px; }
+  .cc-row { display:flex; align-items:center; gap:8px; }
+  .cc-key {
+    font-size:10px; font-weight:600;
+    text-transform:uppercase; letter-spacing:.09em;
+    color:var(--tlo); min-width:62px;
+  }
+  .cc-val { font-size:12px; color:var(--tmd); font-weight:400; }
+  .cc-val.hl { color:var(--thi); font-weight:500; }
+
+  .divider { height:1px; background:var(--bdr); margin:10px 0; }
+
+  .cc-section-lbl {
+    font-size:9px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.12em;
+    color:var(--tdm); margin-bottom:6px;
+  }
+  .cc-pattern {
+    background:var(--s3); border:1px solid var(--bdr);
+    border-radius:9px; padding:8px 11px;
+    font-size:12px; color:var(--thi); font-weight:500;
+    margin-bottom:8px;
+    font-family:'DM Mono',monospace;
+  }
+  .cc-method {
+    background:var(--s2); border:1px solid var(--bdr);
+    border-radius:9px; padding:9px 11px;
+    font-size:12px; color:var(--tmd); line-height:1.5;
+  }
+  .cc-method-lbl {
+    font-size:9px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.12em;
+    color:var(--tlo); margin-bottom:4px;
+  }
+  .diff-row { display:flex; gap:3px; margin-top:4px; }
+  .dd { width:18px; height:2.5px; border-radius:2px; background:var(--s5); }
+  .dd.on { background:var(--thi); }
+
+  /* ── Formula / Definition ── */
+  .formula-item { margin-bottom:11px; }
+  .formula-item:last-child { margin-bottom:0; }
+  .fi-label {
+    font-size:9px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.11em;
+    color:var(--tlo); margin-bottom:5px;
+  }
+  .fi-val {
+    background:var(--s2); border:1px solid var(--bdr);
+    border-radius:9px; padding:9px 11px;
+    font-size:12px; color:var(--tmd); line-height:1.55;
+  }
+  .fi-val.formula {
+    font-family:'DM Mono',monospace; font-size:11px;
+    color:var(--thi); background:var(--bg);
+    border-color:var(--bdrhi); letter-spacing:.02em;
+  }
+  .related-tag {
+    display:inline-block; font-size:10px;
+    padding:2px 8px; border-radius:10px;
+    background:var(--s3); border:1px solid var(--bdr);
+    color:var(--tlo); margin:3px 3px 0 0;
+    font-family:'DM Mono',monospace;
+  }
+  .related-tag:hover { border-color:var(--bdrhi); color:var(--thi); cursor:pointer; }
+
+  /* ── Hints ── */
+  .hint-item {
+    padding:9px 11px; border-radius:10px;
+    border:1px solid var(--bdr);
+    margin-bottom:7px; cursor:pointer;
+    transition:all .2s; background:var(--s2);
+  }
+  .hint-item:last-child { margin-bottom:0; }
+  .hint-item.avail { border-color:var(--bdrhi); background:var(--s3); }
+  .hint-item.avail:hover { background:var(--s4); border-color:var(--bdr2); }
+  .hint-item.locked { opacity:.35; cursor:not-allowed; }
+  .hint-item.revealed { border-color:var(--bdrhi); background:var(--s2); cursor:default; }
+
+  .hint-header {
+    display:flex; align-items:center; gap:7px; margin-bottom:3px;
+  }
+  .hint-num {
+    font-family:'DM Mono',monospace; font-size:9px;
+    color:var(--tdm); min-width:14px;
+  }
+  .hint-title { font-size:11px; font-weight:600; color:var(--tmd); flex:1; }
+  .hint-item.avail .hint-title { color:var(--thi); }
+  .hint-item.revealed .hint-title { color:var(--tmd); }
+  .hint-lock { font-size:11px; }
+  .hint-text {
+    font-size:11.5px; color:var(--tmd); line-height:1.55;
+    margin-top:4px; display:none;
+  }
+  .hint-item.avail .hint-text.visible,
+  .hint-item.revealed .hint-text { display:block; color:var(--tmd); }
+  .hint-gating-note {
+    font-size:10px; font-style:italic; color:var(--tdm);
+    margin-top:8px; text-align:center; line-height:1.4;
+  }
+
+  /* ── Topic Understanding ── */
+  .tu-topic { font-size:11.5px; color:var(--tmd); margin-bottom:11px; line-height:1.5; }
+  .tu-topic strong { color:var(--thi); font-weight:500; }
+
+  .tu-bar-wrap { margin-bottom:9px; }
+  .tu-bar-label {
+    display:flex; justify-content:space-between;
+    font-size:10px; color:var(--tlo); margin-bottom:5px;
+  }
+  .tu-track {
+    height:5px; background:var(--s4);
+    border-radius:3px; overflow:hidden;
+    border:1px solid var(--bdr);
+  }
+  .tu-fill {
+    height:100%; border-radius:3px;
+    background: var(--thi);
+    transition:width 1.2s cubic-bezier(.4,0,.2,1);
+  }
+  .tu-fill.dim { background: var(--s6); }
+
+  .tu-tags { display:flex; flex-wrap:wrap; gap:5px; margin-top:10px; }
+  .tu-tag {
+    font-size:10px; padding:3px 9px; border-radius:10px;
+    border:1px solid var(--bdr); color:var(--tlo); background:var(--s2);
+  }
+  .tu-tag.weak   { border-color:rgba(224,80,64,.3); color:#c07060; }
+  .tu-tag.ok     { border-color:rgba(200,160,60,.3); color:#b09040; }
+  .tu-tag.strong { border-color:var(--bdrhi); color:var(--tmd); }
+
+  .tu-sessions { margin-top:auto; padding-top:9px; }
+  .tu-sessions-lbl {
+    font-size:9px; font-weight:700;
+    text-transform:uppercase; letter-spacing:.1em;
+    color:var(--tdm); margin-bottom:6px;
+  }
+  .tu-session-row { display:flex; align-items:center; gap:7px; margin-bottom:5px; }
+  .ts-dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+  .ts-dot.r { background:#b84040; }
+  .ts-dot.y { background:#a08020; }
+  .ts-dot.g { background:var(--s6); }
+  .ts-topic { font-size:11px; color:var(--tlo); flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ts-track { width:48px; height:2.5px; background:var(--s4); border-radius:2px; flex-shrink:0; overflow:hidden; }
+  .ts-fill { height:100%; border-radius:2px; }
+  .ts-fill.r { background:#b84040; }
+  .ts-fill.y { background:#a08020; }
+  .ts-fill.g { background:var(--s6); }
+  .ts-pct { font-family:'DM Mono',monospace; font-size:10px; color:var(--tlo); min-width:26px; text-align:right; }
+
+  @keyframes fadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <button class="ham" id="ham">
+    <span class="b"></span><span class="b"></span><span class="b"></span>
+  </button>
+  <span class="nav-logo">Phi<em>Prep</em></span>
+  <div class="nav-sp"></div>
+  <button class="nav-link">Contact</button>
+  <button class="nav-link">About</button>
+  <div class="nav-av">D</div>
+</nav>
+
+<!-- OVERLAY -->
+<div class="overlay" id="ov"></div>
+
+<!-- DRAWER -->
+<div class="drawer" id="dr">
+  <div class="dr-head">
+    <span class="dr-title">Sessions</span>
+    <button class="new-btn">+</button>
+  </div>
+  <div class="streak">
+    <span class="stk-lbl">Streak</span>
+    <div style="display:flex;gap:2px">
+      <span class="flame on">🔥</span><span class="flame on">🔥</span>
+      <span class="flame on">🔥</span><span class="flame">🔥</span><span class="flame">🔥</span>
+    </div>
+    <span class="stk-ct">14 days</span>
+  </div>
+  <div class="dr-list">
+    <div class="sec-lbl">Today</div>
+    <div class="di act" style="transition-delay:.04s">
+      <div class="di-top"><div class="di-dot"></div><div class="di-title">∫ x² · eˣ dx — Integration</div></div>
+      <div class="di-meta"><span>2 min ago</span><span class="di-tag">Calculus</span></div>
+    </div>
+    <div class="di" style="transition-delay:.07s">
+      <div class="di-title">Limits — L'Hôpital's Rule</div>
+      <div class="di-meta"><span>1 hr ago</span><span class="di-tag">Calculus</span></div>
+    </div>
+    <div class="sec-lbl">Yesterday</div>
+    <div class="di" style="transition-delay:.10s">
+      <div class="di-title">Quadratic Equations — Roots</div>
+      <div class="di-meta"><span>Yesterday</span><span class="di-tag">Algebra</span></div>
+    </div>
+    <div class="di" style="transition-delay:.13s">
+      <div class="di-title">Coordinate Geometry — Circles</div>
+      <div class="di-meta"><span>Yesterday</span><span class="di-tag">Co. Geo</span></div>
+    </div>
+    <div class="di" style="transition-delay:.16s">
+      <div class="di-title">Probability — Bayes Theorem</div>
+      <div class="di-meta"><span>Yesterday</span><span class="di-tag">Probability</span></div>
+    </div>
+    <div class="sec-lbl">This Week</div>
+    <div class="di" style="transition-delay:.19s">
+      <div class="di-title">Trigonometric Equations</div>
+      <div class="di-meta"><span>Monday</span><span class="di-tag">Trigonometry</span></div>
+    </div>
+    <div class="di" style="transition-delay:.22s">
+      <div class="di-title">Matrices — Determinants</div>
+      <div class="di-meta"><span>Sunday</span><span class="di-tag">Algebra</span></div>
+    </div>
+  </div>
+  <div class="dr-foot">
+    <div class="foot-av">D</div>
+    <div class="foot-info">
+      <div class="foot-name">Darsh</div>
+      <div class="foot-sub">JEE Advanced · 2026</div>
+    </div>
+    <button class="foot-cog">⚙</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT: Chat -->
+  <div class="chat-col">
+    <div class="msgs" id="msgs">
+
+      <div class="mr u">
+        <div class="mav u">D</div>
+        <div class="bbl">How do I solve ∫ x² · eˣ dx ?</div>
+      </div>
+
+      <div class="mr ai">
+        <div class="mav ai">Φ</div>
+        <div style="max-width:86%">
+          <div class="bbl" style="border-radius:3px 13px 13px 13px">
+            Let's build your thinking — not hand you the answer.
+            <div class="bc">
+              <div class="bc-lbl">Brain Mode</div>
+              <div class="stp"><span class="sn">01</span><span class="st"><b>Pattern:</b> Algebraic × Exponential — two distinct types multiplied together.</span></div>
+              <div class="stp"><span class="sn">02</span><span class="st"><b>Method:</b> Integration by Parts. Substitution fails here. ILATE determines roles.</span></div>
+              <div class="stp"><span class="sn">03</span><span class="st"><b>Setup:</b> u = x², dv = eˣ dx. Differentiate u, integrate dv.</span></div>
+              <div class="stp"><span class="sn">→</span><span class="st"><b>First move:</b> Apply ∫u dv = uv − ∫v du. What are du and v?</span></div>
+              <div class="wh">Answer withheld — work it out ↑</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mr u">
+        <div class="mav u">D</div>
+        <div class="bbl">So du = 2x dx and v = eˣ ?</div>
+      </div>
+
+      <div class="mr ai">
+        <div class="mav ai">Φ</div>
+        <div class="bbl" style="border-radius:3px 13px 13px 13px">
+          Exactly. Now apply the formula — what does the expression become after the first IBP application?
+        </div>
+      </div>
+
+    </div>
+
+    <div class="inp-bar">
+      <div class="inp-row">
+        <div class="inp-icons">
+          <button class="iico" title="Upload image">📷</button>
+          <button class="iico" id="calcBtn" title="Calculator (fx-991EX)">∑</button>
+        </div>
+        <textarea class="inp" id="inp" placeholder="Enter something!!" rows="1"></textarea>
+        <button class="sbtn" id="sbtn">
+          <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+        </button>
+      </div>
+      <div class="sos-row">
+        <button class="sos-btn">🆘 SOS — show full solution</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: 2×2 -->
+  <div class="right-grid">
+
+    <!-- TOP LEFT: Concept Clarification -->
+    <div class="card">
+      <div class="card-hd-line">
+        <div class="card-hd">Concept clarification</div>
+        <div class="mode-tog">
+          <button class="mb brain act" id="mb-brain">Brain</button>
+          <button class="mb sos" id="mb-sos">SOS</button>
+        </div>
+      </div>
+      <div class="cc-meta">
+        <div class="cc-row"><span class="cc-key">Subject</span><span class="cc-val hl">Calculus</span></div>
+        <div class="cc-row"><span class="cc-key">Topic</span><span class="cc-val">Integration</span></div>
+        <div class="cc-row"><span class="cc-key">Subtopic</span><span class="cc-val">Integration by Parts</span></div>
+        <div class="cc-row">
+          <span class="cc-key">Difficulty</span>
+          <div>
+            <span class="cc-val">Medium</span>
+            <div class="diff-row">
+              <div class="dd on"></div><div class="dd on"></div>
+              <div class="dd on"></div><div class="dd"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="divider"></div>
+      <div class="cc-section-lbl">Pattern</div>
+      <div class="cc-pattern">Algebraic × Exponential — ILATE rule</div>
+      <div class="cc-section-lbl" style="margin-top:8px">Method</div>
+      <div class="cc-method">
+        <div class="cc-method-lbl">Why IBP?</div>
+        No inner derivative for substitution. Product of two unrelated function types → IBP with u = algebraic, dv = exponential.
+      </div>
+    </div>
+
+    <!-- TOP RIGHT: Formula or definition -->
+    <div class="card">
+      <div class="card-hd">Formula or definition</div>
+      <div class="formula-item">
+        <div class="fi-label">Topic definition</div>
+        <div class="fi-val">Integration by Parts reverses the product rule. Used when the integrand is a product of two functions that don't simplify via substitution.</div>
+      </div>
+      <div class="formula-item">
+        <div class="fi-label">Formula</div>
+        <div class="fi-val formula">∫u dv = uv − ∫v du<br><br>ILATE: Inverse trig → Log → Algebraic → Trig → Exponential</div>
+      </div>
+      <div class="formula-item">
+        <div class="fi-label">Related cases</div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px">
+          <span class="related-tag">∫xⁿeˣ dx</span>
+          <span class="related-tag">∫x·sin x dx</span>
+          <span class="related-tag">∫ln x dx</span>
+          <span class="related-tag">∫x·cos x dx</span>
+          <span class="related-tag">∫eˣ·sin x dx</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BOTTOM LEFT: Hints -->
+    <div class="card">
+      <div class="card-hd">Hints</div>
+
+      <div class="hint-item avail" id="hint1">
+        <div class="hint-header">
+          <span class="hint-num">H1</span>
+          <span class="hint-title">Concept hint</span>
+          <span class="hint-lock">→</span>
+        </div>
+        <div class="hint-text visible">Which formula applies when two different types of functions are multiplied together?</div>
+      </div>
+
+      <div class="hint-item locked" id="hint2">
+        <div class="hint-header">
+          <span class="hint-num">H2</span>
+          <span class="hint-title">Approach hint</span>
+          <span class="hint-lock">🔒</span>
+        </div>
+        <div class="hint-text">Does differentiating x² repeatedly simplify it? What happens after two IBP passes?</div>
+      </div>
+
+      <div class="hint-item locked" id="hint3">
+        <div class="hint-header">
+          <span class="hint-num">H3</span>
+          <span class="hint-title">Final hint</span>
+          <span class="hint-lock">🔒</span>
+        </div>
+        <div class="hint-text">After first IBP: x²eˣ − ∫2x·eˣ dx. Apply IBP again on the remaining integral. One more pass finishes it.</div>
+      </div>
+
+      <div class="hint-gating-note" id="hint-note">Tap H1 to begin · sequential unlock only</div>
+    </div>
+
+    <!-- BOTTOM RIGHT: Topic Understanding -->
+    <div class="card">
+      <div class="card-hd">Topic understanding</div>
+
+      <div class="tu-topic">Solving: <strong>Integration by Parts</strong></div>
+
+      <div class="tu-bar-wrap">
+        <div class="tu-bar-label"><span>Overall progress</span><span>68%</span></div>
+        <div class="tu-track"><div class="tu-fill" style="width:68%"></div></div>
+      </div>
+
+      <div class="tu-bar-wrap">
+        <div class="tu-bar-label"><span>Session accuracy</span><span>2 / 3 correct</span></div>
+        <div class="tu-track"><div class="tu-fill dim" style="width:66%"></div></div>
+      </div>
+
+      <div class="tu-tags">
+        <span class="tu-tag strong">alg × exp ✓</span>
+        <span class="tu-tag ok">alg × trig</span>
+        <span class="tu-tag weak">log × alg</span>
+      </div>
+
+      <div class="tu-sessions">
+        <div class="tu-sessions-lbl">Weakness map</div>
+        <div class="tu-session-row">
+          <div class="ts-dot r"></div>
+          <span class="ts-topic">Trig. Equations</span>
+          <div class="ts-track"><div class="ts-fill r" style="width:42%"></div></div>
+          <span class="ts-pct">42%</span>
+        </div>
+        <div class="tu-session-row">
+          <div class="ts-dot y"></div>
+          <span class="ts-topic">Limits</span>
+          <div class="ts-track"><div class="ts-fill y" style="width:62%"></div></div>
+          <span class="ts-pct">62%</span>
+        </div>
+        <div class="tu-session-row">
+          <div class="ts-dot g"></div>
+          <span class="ts-topic">Quadratic Equations</span>
+          <div class="ts-track"><div class="ts-fill g" style="width:91%"></div></div>
+          <span class="ts-pct">91%</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  /* Drawer */
+  const ham = document.getElementById('ham');
+  const dr  = document.getElementById('dr');
+  const ov  = document.getElementById('ov');
+  const openD  = () => { dr.classList.add('on'); ov.classList.add('on'); ham.classList.add('open'); };
+  const closeD = () => { dr.classList.remove('on'); ov.classList.remove('on'); ham.classList.remove('open'); };
+  ham.addEventListener('click', () => dr.classList.contains('on') ? closeD() : openD());
+  ov.addEventListener('click', closeD);
+  document.querySelectorAll('.di').forEach(d => {
+    d.addEventListener('click', () => {
+      document.querySelectorAll('.di').forEach(x => x.classList.remove('act'));
+      d.classList.add('act'); closeD();
+    });
+  });
+
+  /* Mode toggle */
+  document.getElementById('mb-brain').addEventListener('click', function() {
+    this.classList.add('act'); document.getElementById('mb-sos').classList.remove('act');
+  });
+  document.getElementById('mb-sos').addEventListener('click', function() {
+    this.classList.add('act'); document.getElementById('mb-brain').classList.remove('act');
+  });
+
+  /* Sequential hints */
+  const hints = [
+    { id:'hint1', next:'hint2' },
+    { id:'hint2', next:'hint3' },
+    { id:'hint3', next:null   }
+  ];
+  hints.forEach((h) => {
+    document.getElementById(h.id).addEventListener('click', function() {
+      if (this.classList.contains('locked')) return;
+      if (this.classList.contains('revealed')) return;
+      this.classList.remove('avail');
+      this.classList.add('revealed');
+      this.querySelector('.hint-lock').textContent = '✓';
+      if (h.next) {
+        const n = document.getElementById(h.next);
+        n.classList.remove('locked');
+        n.classList.add('avail');
+        n.querySelector('.hint-text').classList.add('visible');
+      } else {
+        const note = document.getElementById('hint-note');
+        note.textContent = "You've seen all hints — now trust yourself and solve it. You've got this. 💪";
+        note.style.color = 'var(--tmd)';
+      }
+    });
+  });
+
+  /* Send */
+  const inp  = document.getElementById('inp');
+  const sbtn = document.getElementById('sbtn');
+  const msgs = document.getElementById('msgs');
+  inp.addEventListener('input', () => {
+    inp.style.height = '32px';
+    inp.style.height = Math.min(inp.scrollHeight, 90) + 'px';
+  });
+  const replies = [
+    "Good — write the full expression after the first IBP application.",
+    "Correct. What does the second IBP pass give you?",
+    "Right structure. Double-check your signs before continuing.",
+    "Well done. Collect terms and add + C for the final answer."
+  ];
+  let ri = 0;
+  function send() {
+    const txt = inp.value.trim(); if (!txt) return;
+    const r = document.createElement('div');
+    r.className = 'mr u';
+    r.innerHTML = `<div class="mav u">D</div><div class="bbl">${txt}</div>`;
+    msgs.appendChild(r);
+    inp.value = ''; inp.style.height = '32px';
+    msgs.scrollTop = msgs.scrollHeight;
+    setTimeout(() => {
+      const t = document.createElement('div');
+      t.className = 'mr ai'; t.id = 'typ';
+      t.innerHTML = `<div class="mav ai">Φ</div><div class="tbbl"><div class="td"></div><div class="td"></div><div class="td"></div></div>`;
+      msgs.appendChild(t); msgs.scrollTop = msgs.scrollHeight;
+    }, 280);
+    setTimeout(() => {
+      const t = document.getElementById('typ'); if(t) t.remove();
+      const rep = document.createElement('div');
+      rep.className = 'mr ai';
+      rep.innerHTML = `<div class="mav ai">Φ</div><div class="bbl" style="border-radius:3px 13px 13px 13px">${replies[ri % replies.length]}</div>`;
+      msgs.appendChild(rep); msgs.scrollTop = msgs.scrollHeight; ri++;
+    }, 1800);
+  }
+  sbtn.addEventListener('click', send);
+  inp.addEventListener('keydown', e => { if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();} });
+</script>
+
+<!-- ══════════════════════════════════════════════
+     CASIO fx-991EX CLASSWIZ — POPUP SIMULATOR
+══════════════════════════════════════════════ -->
+<div id="cOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);z-index:500;display:none;"></div>
+
+<div id="cPopup" style="
+  position:fixed;
+  top:50%;left:50%;
+  transform:translate(-50%,-48%) scale(.96);
+  z-index:501;display:none;opacity:0;
+  transition:transform .26s cubic-bezier(.4,0,.2,1),opacity .24s ease;
+  font-family:'DM Mono',monospace;
+">
+<style>
+/* ── CASIO fx-991EX — REDESIGNED FOR LEGIBILITY ── */
+#casio {
+  width:300px;
+  background:#111;
+  border-radius:16px 16px 22px 22px;
+  border:1px solid rgba(255,255,255,.16);
+  box-shadow:0 32px 72px rgba(0,0,0,.9), inset 0 1px 0 rgba(255,255,255,.07);
+  overflow:hidden;
+  user-select:none;
+}
+
+/* Brand strip */
+#casio .cbrand {
+  background:#0a0a0a;
+  padding:9px 14px 7px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  position:relative;
+}
+#casio .cbrand-name { font-family:'Jost',sans-serif;font-size:13px;font-weight:700;color:#ccc;letter-spacing:.12em; }
+#casio .cbrand-model{ font-family:'Jost',sans-serif;font-size:10px;color:#555;letter-spacing:.06em;margin-top:1px; }
+#casio .cbrand-cw   { font-family:'Jost',sans-serif;font-size:8px;color:#444;letter-spacing:.2em;text-transform:uppercase;text-align:right; }
+#casio .cbrand-sub  { font-family:'Jost',sans-serif;font-size:8px;color:#333;text-align:right;margin-top:1px; }
+#casio .cclose {
+  background:none;border:none;cursor:pointer;
+  color:#444;font-size:20px;line-height:1;
+  position:absolute;top:8px;right:12px;
+  transition:color .18s;
+}
+#casio .cclose:hover { color:#aaa; }
+
+/* Display */
+#casio .cdisp {
+  background:#141c14;
+  margin:10px 10px 6px;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.08);
+  padding:8px 12px 8px;
+  position:relative;overflow:hidden;
+}
+#casio .cdisp::after {
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(180deg,rgba(255,255,255,.02) 0%,transparent 50%);
+  pointer-events:none;
+}
+#casio .cdisp-bar {
+  display:flex;gap:8px;margin-bottom:5px;
+  font-family:'Jost',sans-serif;
+  font-size:8px;font-weight:600;
+  letter-spacing:.1em;text-transform:uppercase;
+  color:#2a4a2a;
+}
+#casio .cdisp-bar span.on { color:#4a8a4a; }
+#casio .cdisp-expr {
+  font-size:12px;color:#5a845a;
+  min-height:15px;text-align:right;
+  word-break:break-all;line-height:1.4;
+  font-family:'DM Mono',monospace;
+}
+#casio .cdisp-result {
+  font-size:28px;font-weight:500;color:#aad8aa;
+  text-align:right;line-height:1.15;
+  letter-spacing:-.01em;margin-top:3px;
+  font-family:'DM Mono',monospace;
+}
+#casio .cdisp-result.cerr { font-size:14px;color:#d06050;margin-top:6px; }
+
+/* "Enter to Chat" bar */
+#casio .chat-bar {
+  margin:0 10px 8px;
+  display:flex;gap:6px;align-items:center;
+}
+#casio .chat-preview {
+  flex:1;background:#161616;border:1px solid rgba(255,255,255,.1);
+  border-radius:8px;padding:5px 10px;
+  font-size:11px;color:#888;font-family:'DM Mono',monospace;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  min-height:28px;line-height:18px;
+}
+#casio .chat-preview.has-val { color:#d0d0d0; }
+#casio .chat-send-btn {
+  background:#e8e8e8;border:none;border-radius:8px;
+  padding:5px 12px;cursor:pointer;
+  font-family:'Jost',sans-serif;font-size:11px;font-weight:600;
+  color:#111;letter-spacing:.03em;white-space:nowrap;
+  transition:background .18s,transform .1s;
+  display:flex;align-items:center;gap:5px;
+}
+#casio .chat-send-btn:hover { background:#fff;transform:scale(1.03); }
+#casio .chat-send-btn:active { transform:scale(.97); }
+#casio .chat-send-btn svg { width:11px;height:11px;fill:#111; }
+
+/* Button area */
+#casio .cbarea { padding:4px 8px 10px; }
+#casio .crow { display:flex;gap:4px;margin-bottom:4px; }
+
+/* ── KEY BASE ── */
+#casio .ck {
+  flex:1;
+  min-height:30px;
+  border-radius:5px;
+  border:none;
+  cursor:pointer;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  position:relative;
+  transition:filter .08s,transform .07s;
+  outline:none;
+  gap:1px;
+  padding:2px 3px;
+}
+#casio .ck:active { transform:scale(.90); filter:brightness(.72); }
+
+/* Secondary label above key */
+#casio .ck-top {
+  font-size:7px;font-weight:700;
+  letter-spacing:.04em;white-space:nowrap;
+  line-height:1;
+}
+#casio .ck-top.sh { color:#d4a030; }
+#casio .ck-top.al { color:#4a9adc; }
+
+/* Primary label */
+#casio .ck-lbl {
+  font-family:'DM Mono',monospace;
+  font-size:12px;font-weight:600;
+  line-height:1;
+  white-space:nowrap;
+}
+
+/* Key colour families */
+#casio .ck-dk { background:#1c1c1c;border:1px solid rgba(255,255,255,.13); }
+#casio .ck-dk .ck-lbl { color:#d0d0d0; }
+#casio .ck-dk:hover { background:#252525; }
+
+#casio .ck-op { background:#1a231a;border:1px solid rgba(100,180,100,.2); }
+#casio .ck-op .ck-lbl { color:#80cc80;font-size:14px; }
+#casio .ck-op:hover { background:#202e20; }
+
+#casio .ck-nm { background:#191919;border:1px solid rgba(255,255,255,.1); }
+#casio .ck-nm .ck-lbl { color:#e8e8e8;font-size:15px; }
+#casio .ck-nm:hover { background:#222; }
+
+#casio .ck-ac { background:#1e1414;border:1px solid rgba(220,80,60,.28); }
+#casio .ck-ac .ck-lbl { color:#e86050;font-size:12px; }
+#casio .ck-ac:hover { background:#2a1818; }
+
+#casio .ck-dl { background:#14141c;border:1px solid rgba(100,120,220,.24); }
+#casio .ck-dl .ck-lbl { color:#7888d8;font-size:12px; }
+#casio .ck-dl:hover { background:#1a1a26; }
+
+#casio .ck-ex {
+  background:#182018;
+  border:1px solid rgba(100,220,100,.28);
+}
+#casio .ck-ex .ck-lbl { color:#6ad86a;font-size:11px;font-weight:700;letter-spacing:.06em; }
+#casio .ck-ex:hover { background:#1e2c1e; }
+
+#casio .ck-sh {
+  background:#1e1808;
+  border:1px solid rgba(212,160,48,.26);
+}
+#casio .ck-sh .ck-lbl { font-family:'Jost',sans-serif;color:#d4a030;font-size:11px;font-weight:700;letter-spacing:.08em; }
+#casio .ck-sh:hover { background:#261e0a; }
+
+#casio .ck-al {
+  background:#08101c;
+  border:1px solid rgba(74,154,220,.24);
+}
+#casio .ck-al .ck-lbl { font-family:'Jost',sans-serif;color:#4a9adc;font-size:11px;font-weight:700;letter-spacing:.08em; }
+#casio .ck-al:hover { background:#0c1426; }
+
+/* Widths */
+#casio .ck-w2  { flex:2; }
+#casio .ck-w15 { flex:1.5; }
+
+/* D-pad */
+#casio .dpad {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  grid-template-rows:repeat(3,1fr);
+  gap:3px;
+  width:84px;height:84px;
+  flex-shrink:0;
+}
+#casio .dpad .ck { min-height:auto;height:100%;flex:none; }
+#casio .ck-nav { background:#101610;border:1px solid rgba(120,180,120,.14); }
+#casio .ck-nav .ck-lbl { color:#70b070;font-size:11px; }
+#casio .ck-nav:hover { background:#161e16; }
+#casio .ck-ctr { background:#141e14;border:1px solid rgba(90,160,90,.2); }
+#casio .ck-ctr .ck-lbl { font-family:'Jost',sans-serif;color:#5ab05a;font-size:9px;font-weight:700;letter-spacing:.06em; }
+
+/* Separator */
+#casio .csep { height:1px;background:rgba(255,255,255,.05);margin:4px 0; }
+
+/* Angle mode pill */
+#casio .ang-pill {
+  display:flex;background:#161616;border:1px solid rgba(255,255,255,.08);
+  border-radius:6px;overflow:hidden;margin:0 8px 6px;
+}
+#casio .ang-btn {
+  flex:1;padding:4px 0;font-family:'Jost',sans-serif;
+  font-size:10px;font-weight:600;letter-spacing:.08em;
+  background:none;border:none;cursor:pointer;
+  color:#444;transition:background .18s,color .18s;
+}
+#casio .ang-btn.active { background:#1c1c1c;color:#a0a0a0; }
+</style>
+
+<div id="casio" style="position:relative;">
+
+  <!-- Brand -->
+  <div class="cbrand">
+    <div>
+      <div class="cbrand-name">CASIO</div>
+      <div class="cbrand-model">fx-991EX</div>
+    </div>
+    <div>
+      <div class="cbrand-cw">ClassWiz</div>
+      <div class="cbrand-sub">Natural-V.P.A.M.</div>
+    </div>
+    <button class="cclose" id="cClose">×</button>
+  </div>
+
+  <!-- Display -->
+  <div class="cdisp">
+    <div class="cdisp-bar">
+      <span id="cdComp" class="on">COMP</span>
+      <span id="cdDeg">DEG</span>
+      <span id="cdRad" class="on">RAD</span>
+      <span id="cdShift">S</span>
+      <span id="cdAlpha">A</span>
+      <span id="cdFix">Norm1</span>
+    </div>
+    <div class="cdisp-expr"  id="cdExpr"></div>
+    <div class="cdisp-result" id="cdRes">0</div>
+  </div>
+
+  <!-- Enter to Chat bar -->
+  <div class="chat-bar">
+    <div class="chat-preview" id="chatPreview">result will appear here</div>
+    <button class="chat-send-btn" id="chatSendBtn">
+      <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+      Send to chat
+    </button>
+  </div>
+
+  <!-- Angle mode toggle -->
+  <div class="ang-pill">
+    <button class="ang-btn active" id="angRad" onclick="cAng('RAD')">RAD</button>
+    <button class="ang-btn"        id="angDeg" onclick="cAng('DEG')">DEG</button>
+  </div>
+
+  <div class="cbarea">
+
+    <!-- R0: meta row -->
+    <div class="crow">
+      <button class="ck ck-sh" id="ckShift" onclick="cMeta('sh')">
+        <span class="ck-lbl">SHIFT</span>
+      </button>
+      <button class="ck ck-al" id="ckAlpha" onclick="cMeta('al')">
+        <span class="ck-lbl">ALPHA</span>
+      </button>
+      <button class="ck ck-dk" onclick="cDel()">
+        <span class="ck-top sh">INS</span>
+        <span class="ck-lbl">DEL</span>
+      </button>
+      <button class="ck ck-ac" onclick="cAC()">
+        <span class="ck-top sh">OFF</span>
+        <span class="ck-lbl">AC</span>
+      </button>
+    </div>
+
+    <!-- R1: scientific functions -->
+    <div class="crow">
+      <button class="ck ck-dk" onclick="cIn('log(')">
+        <span class="ck-top sh">10ˣ</span>
+        <span class="ck-lbl">log</span>
+      </button>
+      <button class="ck ck-dk" onclick="cIn('ln(')">
+        <span class="ck-top sh">eˣ</span>
+        <span class="ck-lbl">ln</span>
+      </button>
+      <button class="ck ck-dk" onclick="cIn('sin(')">
+        <span class="ck-top sh">sin⁻¹</span>
+        <span class="ck-lbl">sin</span>
+      </button>
+      <button class="ck ck-dk" onclick="cIn('cos(')">
+        <span class="ck-top sh">cos⁻¹</span>
+        <span class="ck-lbl">cos</span>
+      </button>
+      <button class="ck ck-dk" onclick="cIn('tan(')">
+        <span class="ck-top sh">tan⁻¹</span>
+        <span class="ck-lbl">tan</span>
+      </button>
+    </div>
+
+    <!-- R2: powers & constants -->
+    <div class="crow">
+      <button class="ck ck-dk" onclick="cIn('**2')">
+        <span class="ck-top sh">√</span>
+        <span class="ck-lbl">x²</span>
+      </button>
+      <button class="ck ck-dk" onclick="cIn('**(')">
+        <span class="ck-top sh">ˣ√</span>
+        <span class="ck-lbl">xʸ</span>
+      </button>
+      <button class="ck ck-dk" onclick="cIn('(')">
+        <span class="ck-lbl">(</span>
+      </button>
+      <button class="ck ck-dk" onclick="cIn(')')">
+        <span class="ck-lbl">)</span>
+      </button>
+      <button class="ck ck-dk" onclick="cFn('pi')">
+        <span class="ck-top sh">e</span>
+        <span class="ck-lbl">π</span>
+      </button>
+    </div>
+
+    <!-- R3: more sci + Ans -->
+    <div class="crow">
+      <button class="ck ck-dk" onclick="cFn('sqrt')">
+        <span class="ck-top sh">x²</span>
+        <span class="ck-lbl">√</span>
+      </button>
+      <button class="ck ck-dk" onclick="cFn('neg')">
+        <span class="ck-lbl">(−)</span>
+      </button>
+      <button class="ck ck-dk" onclick="cIn(',')">
+        <span class="ck-lbl">,</span>
+      </button>
+      <button class="ck ck-dk" onclick="cIn('**')">
+        <span class="ck-lbl">^</span>
+      </button>
+      <button class="ck ck-dk" onclick="cFn('ans')">
+        <span class="ck-lbl">Ans</span>
+      </button>
+    </div>
+
+    <div class="csep"></div>
+
+    <!-- R4: D-pad + operators -->
+    <div style="display:flex;gap:4px;margin-bottom:4px;align-items:center;">
+      <!-- D-pad -->
+      <div class="dpad">
+        <div></div>
+        <button class="ck ck-nav" onclick="cNav('up')"><span class="ck-lbl">▲</span></button>
+        <div></div>
+        <button class="ck ck-nav" onclick="cNav('lt')"><span class="ck-lbl">◀</span></button>
+        <button class="ck ck-ctr" onclick="cExe()"><span class="ck-lbl">OK</span></button>
+        <button class="ck ck-nav" onclick="cNav('rt')"><span class="ck-lbl">▶</span></button>
+        <div></div>
+        <button class="ck ck-nav" onclick="cNav('dn')"><span class="ck-lbl">▼</span></button>
+        <div></div>
+      </div>
+      <!-- Operators column -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:4px;">
+        <div class="crow" style="margin:0">
+          <button class="ck ck-op" onclick="cIn('*')"><span class="ck-lbl">×</span></button>
+          <button class="ck ck-op" onclick="cIn('/')"><span class="ck-lbl">÷</span></button>
+        </div>
+        <div class="crow" style="margin:0">
+          <button class="ck ck-op" onclick="cIn('+')"><span class="ck-lbl">+</span></button>
+          <button class="ck ck-op" onclick="cIn('-')"><span class="ck-lbl">−</span></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- R5–R8: number pad + EXE -->
+    <div class="crow">
+      <button class="ck ck-nm" onclick="cIn('7')"><span class="ck-lbl">7</span></button>
+      <button class="ck ck-nm" onclick="cIn('8')"><span class="ck-lbl">8</span></button>
+      <button class="ck ck-nm" onclick="cIn('9')"><span class="ck-lbl">9</span></button>
+    </div>
+    <div class="crow">
+      <button class="ck ck-nm" onclick="cIn('4')"><span class="ck-lbl">4</span></button>
+      <button class="ck ck-nm" onclick="cIn('5')"><span class="ck-lbl">5</span></button>
+      <button class="ck ck-nm" onclick="cIn('6')"><span class="ck-lbl">6</span></button>
+    </div>
+
+    <!-- 1-3 + EXE tall -->
+    <div style="display:flex;gap:4px;margin-bottom:4px;">
+      <div style="flex:3;display:flex;flex-direction:column;gap:4px;">
+        <div class="crow" style="margin:0">
+          <button class="ck ck-nm" onclick="cIn('1')"><span class="ck-lbl">1</span></button>
+          <button class="ck ck-nm" onclick="cIn('2')"><span class="ck-lbl">2</span></button>
+          <button class="ck ck-nm" onclick="cIn('3')"><span class="ck-lbl">3</span></button>
+        </div>
+        <div class="crow" style="margin:0">
+          <button class="ck ck-nm ck-w2" onclick="cIn('0')"><span class="ck-lbl">0</span></button>
+          <button class="ck ck-nm"       onclick="cIn('.')"><span class="ck-lbl">.</span></button>
+        </div>
+      </div>
+      <button class="ck ck-ex" onclick="cExe()" style="flex:1;min-height:auto;">
+        <span class="ck-lbl">EXE</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+(function(){
+  let expr='', lastAns='0', shOn=false, alOn=false, ang='RAD';
+
+  const dExpr   = document.getElementById('cdExpr');
+  const dRes    = document.getElementById('cdRes');
+  const dSh     = document.getElementById('cdShift');
+  const dAl     = document.getElementById('cdAlpha');
+  const dDeg    = document.getElementById('cdDeg');
+  const dRad    = document.getElementById('cdRad');
+  const kSh     = document.getElementById('ckShift');
+  const kAl     = document.getElementById('ckAlpha');
+  const preview = document.getElementById('chatPreview');
+
+  function rf(){
+    dExpr.textContent = expr || '';
+    dRes.className = 'cdisp-result';
+    /* keep preview showing last result */
+  }
+
+  function updatePreview(val){
+    preview.textContent = val || 'result will appear here';
+    preview.className = val ? 'chat-preview has-val' : 'chat-preview';
+  }
+
+  window.cIn  = function(ch){ expr+=ch; rf(); shOn=alOn=false; um(); };
+  window.cDel = function(){ expr=expr.slice(0,-1); rf(); };
+  window.cAC  = function(){
+    expr=''; lastAns='0';
+    dRes.textContent='0'; dRes.className='cdisp-result';
+    dExpr.textContent='';
+    updatePreview('');
+  };
+  window.cNav = function(){};
+  window.cAng = function(m){
+    ang=m;
+    document.getElementById('angRad').className = 'ang-btn'+(m==='RAD'?' active':'');
+    document.getElementById('angDeg').className = 'ang-btn'+(m==='DEG'?' active':'');
+    dRad.className = m==='RAD'?'on':'';
+    dDeg.className = m==='DEG'?'on':'';
+  };
+  window.cMeta = function(m){
+    if(m==='sh'){ shOn=!shOn; alOn=false; }
+    else         { alOn=!alOn; shOn=false; }
+    um();
+  };
+  function um(){
+    dSh.className = shOn?'on':''; dAl.className = alOn?'on':'';
+    kSh.style.opacity = shOn?'1':'0.5';
+    kAl.style.opacity = alOn?'1':'0.5';
+  }
+  window.cFn = function(fn){
+    if(fn==='pi')   expr+='π';
+    else if(fn==='sqrt') expr+='√(';
+    else if(fn==='ans')  expr+=lastAns;
+    else if(fn==='neg')  expr+='(-';
+    else if(fn==='calc'||fn==='ok'){ cExe(); return; }
+    rf();
+  };
+
+  window.cExe = function(){
+    if(!expr.trim()) return;
+    try{
+      const r = safeEval(expr, ang);
+      dExpr.textContent = expr + ' =';
+      lastAns = fmtN(r);
+      dRes.textContent  = lastAns;
+      dRes.className    = 'cdisp-result';
+      updatePreview(lastAns);
+      expr = '';
+    } catch(e){
+      dRes.textContent = 'Math ERROR';
+      dRes.className   = 'cdisp-result cerr';
+      updatePreview('');
+      expr = '';
+    }
+  };
+
+  /* Send result to chat input */
+  document.getElementById('chatSendBtn').addEventListener('click', function(){
+    if(!lastAns || lastAns==='0') return;
+    const chatInp = document.getElementById('inp');
+    const cur = chatInp.value.trim();
+    chatInp.value = cur ? cur + ' = ' + lastAns : lastAns;
+    chatInp.style.height = '32px';
+    chatInp.style.height = Math.min(chatInp.scrollHeight, 90)+'px';
+    chatInp.focus();
+    closeC();
+  });
+
+  function fmtN(n){
+    if(!isFinite(n)) throw 'e';
+    if(Math.abs(n)>=1e10 || (Math.abs(n)<1e-6 && n!==0))
+      return n.toExponential(6).replace(/\.?0+(e)/,'$1');
+    return parseFloat(n.toPrecision(10)).toString();
+  }
+
+  function safeEval(raw, mode){
+    let s = raw
+      .replace(/π/g,      '(Math.PI)')
+      .replace(/√\(/g,    'Math.sqrt(')
+      .replace(/log\(/g,  'Math.log10(')
+      .replace(/ln\(/g,   'Math.log(')
+      .replace(/sin\(/g,  mode==='DEG'?'(__x=>Math.sin(__x*Math.PI/180))(':'Math.sin(')
+      .replace(/cos\(/g,  mode==='DEG'?'(__x=>Math.cos(__x*Math.PI/180))(':'Math.cos(')
+      .replace(/tan\(/g,  mode==='DEG'?'(__x=>Math.tan(__x*Math.PI/180))(':'Math.tan(')
+      .replace(/×/g,'*').replace(/÷/g,'/').replace(/−/g,'-');
+    const fn = new Function('"use strict"; return (' + s + ')');
+    const r  = fn();
+    if(typeof r !== 'number') throw 'type';
+    return r;
+  }
+
+  /* Open / close */
+  const popup   = document.getElementById('cPopup');
+  const overlay = document.getElementById('cOverlay');
+  const btn     = document.getElementById('calcBtn');
+  const closeB  = document.getElementById('cClose');
+
+  function openC(){
+    overlay.style.display = 'block';
+    popup.style.display   = 'block';
+    requestAnimationFrame(()=>{
+      popup.style.opacity   = '1';
+      popup.style.transform = 'translate(-50%,-50%) scale(1)';
+    });
+  }
+  function closeC(){
+    popup.style.opacity   = '0';
+    popup.style.transform = 'translate(-50%,-48%) scale(.96)';
+    setTimeout(()=>{
+      popup.style.display   = 'none';
+      overlay.style.display = 'none';
+    }, 240);
+  }
+
+  btn.addEventListener('click', e=>{
+    e.stopPropagation();
+    popup.style.display==='block' ? closeC() : openC();
+  });
+  overlay.addEventListener('click', closeC);
+  closeB.addEventListener('click',  closeC);
+})();
+</script>
+</body>
+</html>

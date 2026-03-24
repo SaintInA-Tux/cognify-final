@@ -28,6 +28,8 @@ JSON schema (return exactly these keys):
   "subtopic": "<specific subtopic, e.g. Integration by Parts>",
   "difficulty": "easy" | "medium" | "hard" | "jee_advanced" | "Unknown",
   "pattern": "<structural pattern, e.g. Product of algebraic x exponential>",
+  "formula": "<the single most relevant mathematical formula in LaTeX for this specific query, or null if not applicable>",
+  "definition": "<a concise one-liner plain English definition of the core concept, or null if not applicable>",
   "confidence": <float 0.0-1.0>
 }}
 
@@ -43,7 +45,7 @@ Problem to classify:
 # NEVER returns a solution, derivation, or answer of any kind.
 # ---------------------------------------------------------------------------
 
-BRAIN_MODE_PROMPT = """You are Cognify's Brain Mode engine — a JEE thinking coach.
+BRAIN_MODE_PROMPT = """You are PhyPrep's Brain Mode engine — a JEE thinking coach.
 Your job is to teach the student HOW to approach this problem or understand this concept.
 
 GUIDELINES FOR CONCEPTUAL CLARITY:
@@ -91,7 +93,7 @@ Provide coaching and conceptual guidance only."""
 # This prompt is NEVER used inside Brain Mode logic.
 # ---------------------------------------------------------------------------
 
-SOS_MODE_PROMPT = """You are Cognify's SOS Mode engine.
+SOS_MODE_PROMPT = """You are PhyPrep's SOS Mode engine.
 The student has explicitly requested a full solution. Provide complete step-by-step working.
 
 Requirements:
@@ -138,7 +140,7 @@ Provide the complete solution."""
 # Three levels. Parameterised by hint_level (1, 2, or 3).
 # ---------------------------------------------------------------------------
 
-HINT_PROMPT = """You are Cognify's hint engine.
+HINT_PROMPT = """You are PhyPrep's hint engine.
 Give the student exactly enough to unblock themselves — nothing more.
 
 Hint level definitions:
@@ -174,7 +176,7 @@ Generate hint level {hint_level}."""
 # Returns structured output: is_correct, error_type, explanation.
 # ---------------------------------------------------------------------------
 
-MISTAKE_DETECTION_PROMPT = """You are Cognify's step validation engine for JEE Mathematics, Physics, and Chemistry.
+MISTAKE_DETECTION_PROMPT = """You are PhyPrep's step validation engine for JEE Mathematics, Physics, and Chemistry.
 Evaluate ONLY the student's current step shown below.
 
 Rules:

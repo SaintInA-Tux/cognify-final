@@ -1,11 +1,14 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Target, AlertTriangle, RefreshCcw } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { getDashboard } from '../../api';
 import type { DashboardResponse, TopicWeakness } from '../../api';
+import { usePhiCursor, PhiCursor } from './usePhiCursor';
 
 export function DashboardPage() {
+  usePhiCursor();
+  const navigate = useNavigate();
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,7 +52,7 @@ export function DashboardPage() {
         <div className="flex justify-between items-start mb-3">
           <div className="flex flex-col">
             <span className={`text-[15px] font-bold tracking-tight ${titleColor}`}>{topic.topic}</span>
-            <span className="text-[11px] text-[#A1A1AA] uppercase font-medium tracking-wider">{topic.subject}</span>
+            <span className="text-[12.5px] text-[#A1A1AA] uppercase font-medium tracking-wider">{topic.subject}</span>
           </div>
           <div className="flex flex-col items-end">
             <span className={`text-xl font-black ${titleColor}`}>{topic.accuracy_pct}%</span>
@@ -79,7 +82,8 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] text-[#EDEDED] flex flex-col items-center p-4 md:p-8 font-sans overflow-x-hidden selection:bg-pink-500/30">
+    <div className="min-h-screen bg-[#000000] text-[#EDEDED] flex flex-col items-center p-4 md:p-8 font-sans overflow-x-hidden selection:bg-pink-500/30" style={{ cursor: 'none' }}>
+      <PhiCursor />
 
       {/* Premium Background Layer */}
       <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden">
@@ -96,9 +100,12 @@ export function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
           <div className="flex items-center gap-4">
-            <Link to="/chat" className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors group">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors group"
+            >
               <ArrowLeft size={18} className="text-[#A1A1AA] group-hover:text-white transition-colors" />
-            </Link>
+            </button>
             <div>
               <h1 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[#A1A1AA] tracking-tight">Weakness Dashboard</h1>
               <p className="text-[#71717A] text-sm md:text-base font-medium mt-1">Real-time telemetry on your cognitive performance.</p>
@@ -132,7 +139,7 @@ export function DashboardPage() {
                   <Target size={120} />
                 </div>
                 <div className="relative z-10">
-                  <span className="text-[11px] uppercase tracking-widest font-bold text-pink-400 mb-2 block">Actionable Insight</span>
+                  <span className="text-[12.5px] uppercase tracking-widest font-bold text-pink-400 mb-2 block">Actionable Insight</span>
                   <p className="text-lg md:text-xl font-semibold text-white leading-relaxed max-w-[800px]">
                     {data.recommendation}
                   </p>

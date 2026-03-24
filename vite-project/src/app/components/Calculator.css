@@ -1,0 +1,451 @@
+/* Casio fx-991EX Calculator Styles */
+.casio-container {
+  font-family: 'DM Mono', monospace;
+}
+
+#casio {
+  width: 300px;
+  background: #111;
+  border-radius: 16px 16px 22px 22px;
+  border: 1px solid rgba(255, 255, 255, .16);
+  box-shadow: 0 32px 72px rgba(0, 0, 0, .9), inset 0 1px 0 rgba(255, 255, 255, .07);
+  overflow: hidden;
+  user-select: none;
+}
+
+#casio .cbrand {
+  background: #0a0a0a;
+  padding: 9px 14px 7px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, .06);
+  position: relative;
+}
+
+#casio .cbrand-name {
+  font-family: 'Jost', sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ccc;
+  letter-spacing: .12em;
+}
+
+#casio .cbrand-model {
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  color: #555;
+  letter-spacing: .06em;
+  margin-top: 1px;
+}
+
+#casio .cbrand-cw {
+  font-family: 'Jost', sans-serif;
+  font-size: 8px;
+  color: #444;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  text-align: right;
+}
+
+#casio .cbrand-sub {
+  font-family: 'Jost', sans-serif;
+  font-size: 8px;
+  color: #333;
+  text-align: right;
+  margin-top: 1px;
+}
+
+#casio .cclose {
+  background: none;
+  border: none;
+  cursor: none;
+  color: #444;
+  font-size: 20px;
+  line-height: 1;
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  transition: color .18s;
+}
+
+#casio .cclose:hover {
+  color: #aaa;
+}
+
+#casio .cdisp {
+  background: #141c14;
+  margin: 10px 10px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, .08);
+  padding: 8px 12px 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+#casio .cdisp::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .02) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+#casio .cdisp-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 5px;
+  font-family: 'Jost', sans-serif;
+  font-size: 8px;
+  font-weight: 600;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #2a4a2a;
+}
+
+#casio .cdisp-bar span.on {
+  color: #4a8a4a;
+}
+
+#casio .cdisp-expr {
+  font-size: 12px;
+  color: #5a845a;
+  min-height: 15px;
+  text-align: right;
+  word-break: break-all;
+  line-height: 1.4;
+  font-family: 'DM Mono', monospace;
+}
+
+#casio .cdisp-result {
+  font-size: 28px;
+  font-weight: 500;
+  color: #aad8aa;
+  text-align: right;
+  line-height: 1.15;
+  letter-spacing: -.01em;
+  margin-top: 3px;
+  font-family: 'DM Mono', monospace;
+}
+
+#casio .cdisp-result.cerr {
+  font-size: 14px;
+  color: #d06050;
+  margin-top: 6px;
+}
+
+#casio .chat-bar {
+  margin: 0 10px 8px;
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+#casio .chat-preview {
+  flex: 1;
+  background: #161616;
+  border: 1px solid rgba(255, 255, 255, .1);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 11px;
+  color: #888;
+  font-family: 'DM Mono', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-height: 28px;
+  line-height: 18px;
+}
+
+#casio .chat-preview.has-val {
+  color: #d0d0d0;
+}
+
+#casio .chat-send-btn {
+  background: #e8e8e8;
+  border: none;
+  border-radius: 8px;
+  padding: 5px 12px;
+  cursor: none;
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  color: #111;
+  letter-spacing: .03em;
+  white-space: nowrap;
+  transition: background .18s, transform .1s;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+#casio .chat-send-btn:hover {
+  background: #fff;
+  transform: scale(1.03);
+}
+
+#casio .chat-send-btn:active {
+  transform: scale(.97);
+}
+
+#casio .chat-send-btn svg {
+  width: 11px;
+  height: 11px;
+  fill: #111;
+}
+
+#casio .cbarea {
+  padding: 4px 8px 10px;
+}
+
+#casio .crow {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+#casio .ck {
+  flex: 1;
+  min-height: 30px;
+  border-radius: 5px;
+  border: none;
+  cursor: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: filter .08s, transform .07s;
+  outline: none;
+  gap: 1px;
+  padding: 2px 3px;
+}
+
+#casio .ck:active {
+  transform: scale(.90);
+  filter: brightness(.72);
+}
+
+#casio .ck-top {
+  font-size: 7px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+#casio .ck-top.sh {
+  color: #d4a030;
+}
+
+#casio .ck-top.al {
+  color: #4a9adc;
+}
+
+#casio .ck-lbl {
+  font-family: 'DM Mono', monospace;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+#casio .ck-dk {
+  background: #1c1c1c;
+  border: 1px solid rgba(255, 255, 255, .13);
+}
+
+#casio .ck-dk .ck-lbl {
+  color: #d0d0d0;
+}
+
+#casio .ck-dk:hover {
+  background: #252525;
+}
+
+#casio .ck-op {
+  background: #1a231a;
+  border: 1px solid rgba(100, 180, 100, .2);
+}
+
+#casio .ck-op .ck-lbl {
+  color: #80cc80;
+  font-size: 14px;
+}
+
+#casio .ck-op:hover {
+  background: #202e20;
+}
+
+#casio .ck-nm {
+  background: #191919;
+  border: 1px solid rgba(255, 255, 255, .1);
+}
+
+#casio .ck-nm .ck-lbl {
+  color: #e8e8e8;
+  font-size: 15px;
+}
+
+#casio .ck-nm:hover {
+  background: #222;
+}
+
+#casio .ck-ac {
+  background: #1e1414;
+  border: 1px solid rgba(220, 80, 60, .28);
+}
+
+#casio .ck-ac .ck-lbl {
+  color: #e86050;
+  font-size: 12px;
+}
+
+#casio .ck-ac:hover {
+  background: #2a1818;
+}
+
+#casio .ck-dl {
+  background: #14141c;
+  border: 1px solid rgba(100, 120, 220, .24);
+}
+
+#casio .ck-dl .ck-lbl {
+  color: #7888d8;
+  font-size: 12px;
+}
+
+#casio .ck-dl:hover {
+  background: #1a1a26;
+}
+
+#casio .ck-ex {
+  background: #182018;
+  border: 1px solid rgba(100, 220, 100, .28);
+}
+
+#casio .ck-ex .ck-lbl {
+  color: #6ad86a;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+
+#casio .ck-ex:hover {
+  background: #1e2c1e;
+}
+
+#casio .ck-sh {
+  background: #1e1808;
+  border: 1px solid rgba(212, 160, 48, .26);
+}
+
+#casio .ck-sh .ck-lbl {
+  font-family: 'Jost', sans-serif;
+  color: #d4a030;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+#casio .ck-sh:hover {
+  background: #261e0a;
+}
+
+#casio .ck-al {
+  background: #08101c;
+  border: 1px solid rgba(74, 154, 220, .24);
+}
+
+#casio .ck-al .ck-lbl {
+  font-family: 'Jost', sans-serif;
+  color: #4a9adc;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+}
+
+#casio .ck-al:hover {
+  background: #0c1426;
+}
+
+#casio .ck-w2 {
+  flex: 2;
+}
+
+#casio .dpad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 3px;
+  width: 84px;
+  height: 84px;
+  flex-shrink: 0;
+}
+
+#casio .dpad .ck {
+  min-height: auto;
+  height: 100%;
+  flex: none;
+}
+
+#casio .ck-nav {
+  background: #101610;
+  border: 1px solid rgba(120, 180, 120, .14);
+}
+
+#casio .ck-nav .ck-lbl {
+  color: #70b070;
+  font-size: 11px;
+}
+
+#casio .ck-nav:hover {
+  background: #161e16;
+}
+
+#casio .ck-ctr {
+  background: #141e14;
+  border: 1px solid rgba(90, 160, 90, .2);
+}
+
+#casio .ck-ctr .ck-lbl {
+  font-family: 'Jost', sans-serif;
+  color: #5ab05a;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: .06em;
+}
+
+#casio .csep {
+  height: 1px;
+  background: rgba(255, 255, 255, .05);
+  margin: 4px 0;
+}
+
+#casio .ang-pill {
+  display: flex;
+  background: #161616;
+  border: 1px solid rgba(255, 255, 255, .08);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 0 8px 6px;
+}
+
+#casio .ang-btn {
+  flex: 1;
+  padding: 4px 0;
+  font-family: 'Jost', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .08em;
+  background: none;
+  border: none;
+  cursor: none;
+  color: #444;
+  transition: background .18s, color .18s;
+}
+
+#casio .ang-btn.active {
+  background: #1c1c1c;
+  color: #a0a0a0;
+}

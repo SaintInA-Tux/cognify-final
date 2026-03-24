@@ -62,7 +62,7 @@ def check(label: str, condition: bool, detail: str = "") -> None:
 
 
 async def run_evaluation() -> None:
-    print("\n=== Cognify V1 Model Evaluation ===\n")
+    print("\n=== PhyPrep V1 Model Evaluation ===\n")
 
     for i, tc in enumerate(TEST_CASES, 1):
         problem = tc["problem"]

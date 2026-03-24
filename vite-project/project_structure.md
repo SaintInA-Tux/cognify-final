@@ -1,7 +1,7 @@
-# Cognify - Project Structure
+# PhyPrep - Project Structure
 
 ## Overview
-Cognify is a modern AI SaaS web application built with React, TypeScript, Tailwind CSS v4, and Motion (Framer Motion). It features a premium dark mode design with glassmorphism effects, gradient backgrounds, and neon purple/blue accents.
+PhyPrep is a modern AI SaaS web application built with React, TypeScript, Tailwind CSS v4, and Motion (Framer Motion). It features a premium dark mode design with glassmorphism effects, gradient backgrounds, and neon purple/blue accents.
 
 ## Technology Stack
 
@@ -26,13 +26,13 @@ Cognify is a modern AI SaaS web application built with React, TypeScript, Tailwi
 ## Directory Structure
 
 ```
-cognify/
+phyprep/
 ├── src/
 │   ├── api.js                          # API integration layer
 │   ├── app/
 │   │   ├── App.tsx                     # Main application component
 │   │   └── components/
-│   │       ├── CognifyLogo.tsx         # Animated SVG logo with gradient
+│   │       ├── PhyPrepLogo.tsx         # Animated SVG logo with gradient
 │   │       ├── MainChat.tsx            # Chat interface and message display
 │   │       ├── Sidebar.tsx             # Navigation sidebar with chat history
 │   │       ├── figma/
@@ -77,7 +77,7 @@ import { MainChat } from './components/MainChat';
 
 **Key Features:**
 - Glassmorphism design with backdrop blur
-- Cognify logo with glow effect
+- PhyPrep logo with glow effect
 - "New Chat" button with hover animations
 - Chat history with active state
 - Settings button in footer
@@ -111,7 +111,7 @@ const [isLoading, setIsLoading] = useState(false);
 const data = await askQuestion(userMsg);
 ```
 
-### `/src/app/components/CognifyLogo.tsx`
+### `/src/app/components/PhyPrepLogo.tsx`
 **Purpose:** Animated brain/circuit logo
 
 **Key Features:**
@@ -149,7 +149,7 @@ const data = await askQuestion(userMsg);
 App
 ├── Background Effects (gradients, noise)
 ├── Sidebar
-│   ├── CognifyLogo
+│   ├── PhyPrepLogo
 │   ├── New Chat Button
 │   ├── Chat History List
 │   │   └── Chat Items (with icons)

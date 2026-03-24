@@ -1,4 +1,4 @@
-# Cognify - Architecture & Technical Design
+# PhyPrep - Architecture & Technical Design
 
 ## 🏗️ System Architecture
 
@@ -8,10 +8,10 @@
 ┌─────────────────────────────────────────────────────────────┐
 │                     Browser (Client)                         │
 │  ┌────────────────────────────────────────────────────────┐ │
-│  │                 Cognify React App                       │ │
+│  │                 PhyPrep React App                       │ │
 │  │  ┌──────────┐  ┌──────────┐  ┌────────────────────┐   │ │
 │  │  │          │  │          │  │                    │   │ │
-│  │  │ Sidebar  │  │ MainChat │  │  CognifyLogo       │   │ │
+│  │  │ Sidebar  │  │ MainChat │  │  PhyPrepLogo       │   │ │
 │  │  │          │  │          │  │                    │   │ │
 │  │  └──────────┘  └────┬─────┘  └────────────────────┘   │ │
 │  │                     │                                   │ │
@@ -58,7 +58,7 @@ App (Main Container)
 │
 ├── Sidebar Component
 │   ├── Logo Section
-│   │   └── CognifyLogo (SVG)
+│   │   └── PhyPrepLogo (SVG)
 │   │
 │   ├── New Chat Button
 │   │
@@ -74,7 +74,7 @@ App (Main Container)
     ├── Empty State (conditional)
     │   ├── Hero Section
     │   │   ├── Logo Container
-    │   │   │   └── CognifyLogo
+    │   │   │   └── PhyPrepLogo
     │   │   ├── Main Heading
     │   │   └── Subtitle
     │   │
@@ -91,7 +91,7 @@ App (Main Container)
     │   │       │   └── Message Bubble
     │   │       │
     │   │       └── Assistant Messages
-    │   │           ├── Avatar (CognifyLogo)
+    │   │           ├── Avatar (PhyPrepLogo)
     │   │           └── Message Bubble
     │   │
     │   └── Loading Indicator (conditional)
@@ -599,7 +599,7 @@ tests/
 │   ├── components/
 │   │   ├── MainChat.test.tsx
 │   │   ├── Sidebar.test.tsx
-│   │   └── CognifyLogo.test.tsx
+│   │   └── PhyPrepLogo.test.tsx
 │   ├── api/
 │   │   └── api.test.js
 │   └── utils/
@@ -779,7 +779,7 @@ Backend Monitoring:
 
 ## 🎉 Summary
 
-Cognify's architecture is:
+PhyPrep's architecture is:
 - **Modular**: Easy to extend
 - **Scalable**: Ready for growth  
 - **Performant**: Fast and optimized

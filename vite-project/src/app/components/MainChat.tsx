@@ -1,42 +1,44 @@
 import { useState, useRef, useEffect } from 'react';
 import type React from 'react';
-import { AlignLeft, BookOpen, Code, Lightbulb, Send, Sparkles, Loader2, Image as ImageIcon, X, Menu } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { Send, X, Menu } from 'lucide-react';
+import { motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
-import { CognifyLogo } from './CognifyLogo';
-import { FloatingKeyboard } from './FloatingKeyboard';
+import { PhyPrepLogo } from './PhyPrepLogo';
 import { SciCalculator } from './Calculator';
+import './MainChat.css';
+import { useAuth } from '../context/AuthContext';
+import type { ClassificationResult, TopicWeakness } from '../../api';
 
-const suggestions = [
-  { icon: AlignLeft, text: "JEE Advanced", desc: "Solve complex multi-concept mechanics problems", color: "text-[#3B82F6]" },
-  { icon: Code, text: "Step-by-step", desc: "Break down integration by parts", color: "text-[#10B981]" },
-  { icon: Lightbulb, text: "SOS Mode", desc: "Get an instant direct solution", color: "text-[#F59E0B]" },
-  { icon: BookOpen, text: "Explain a Concept", desc: "Understand the basics of Electromagnetism", color: "text-[#8B5CF6]" }
-];
+import { usePhiCursor, PhiCursor } from './usePhiCursor';
 
 export interface MainChatProps {
   activeChatId?: string | null;
   onChatCreated?: (id: string) => void;
   onMenuClick?: () => void;
+  isSidebarCollapsed?: boolean;
 }
 
-export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatProps) {
+export function MainChat({ activeChatId, onChatCreated, onMenuClick, isSidebarCollapsed }: MainChatProps) {
+  usePhiCursor();
+  const { profile } = useAuth();
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<{role: 'user' | 'assistant', content: string}[]>([]);
+  const [messages, setMessages] = useState<{role: 'user' | 'assistant', content: string, isBrain?: boolean, brainData?: any}[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [mode, setMode] = useState<'brain' | 'sos'>('brain');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [showCalculator, setShowCalculator] = useState(false);
   
-  // F5/F6 Interactive State
+  // Intelligence State
+  const [classification, setClassification] = useState<ClassificationResult | null>(null);
+  const [brainDetails, setBrainDetails] = useState<{pattern: string, method: string, setup: string, firstStep: string} | null>(null);
+  const [topicStats, setTopicStats] = useState<TopicWeakness[]>([]);
   const [activeAttemptId, setActiveAttemptId] = useState<string | null>(null);
   const [currentStepNumber, setCurrentStepNumber] = useState<number>(1);
   const [previousSteps, setPreviousSteps] = useState<string[]>([]);
-  const [hintLevel, setHintLevel] = useState<number>(1);
-  const [hasUsedAllHints, setHasUsedAllHints] = useState<boolean>(false);
+  const [revealedHints, setRevealedHints] = useState<Record<number, string>>({});
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -58,6 +60,15 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
   }, [messages, isLoading]);
 
   useEffect(() => {
+    // Load dashboard stats on mount
+    import('../../api').then(({ getDashboard }) => {
+      getDashboard().then(data => {
+        setTopicStats([...data.weakest_topics, ...data.improving_topics, ...data.strong_topics].slice(0, 3));
+      }).catch(err => console.error("Failed to load dashboard", err));
+    });
+  }, []);
+
+  useEffect(() => {
     if (activeChatId) {
       setIsLoading(true);
       import('../../api').then(({ getChatMessages }) => {
@@ -70,33 +81,14 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
           setIsLoading(false);
         });
       });
-      setMessages([]);
+      // Clear pedagogical state on chat switch
+      setClassification(null);
+      setBrainDetails(null);
       setActiveAttemptId(null);
       setCurrentStepNumber(1);
       setPreviousSteps([]);
-      setHintLevel(1);
-      setHasUsedAllHints(false);
     }
   }, [activeChatId]);
-
-  const handleGetHint = async () => {
-    if (!activeAttemptId || isLoading) return;
-    setIsLoading(true);
-    try {
-      const { getHints } = await import('../../api');
-      const data = await getHints(activeAttemptId, hintLevel);
-      setMessages(prev => [...prev, { role: 'assistant', content: `**Hint ${data.hint_level}:** ${data.hint_text}` }]);
-      if (data.next_hint_available && data.hint_level < 3) {
-        setHintLevel(prev => prev + 1);
-      } else {
-        setHasUsedAllHints(true);
-      }
-    } catch (error) {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Hint unavailable at this time." }]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage) || isLoading) return;
@@ -106,7 +98,7 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
     
     setInput('');
     if (textareaRef.current) {
-      textareaRef.current.style.height = '44px';
+      textareaRef.current.style.height = '32px';
     }
     setSelectedImage(null);
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
@@ -122,11 +114,13 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
       }
 
       let responseText = "";
+      let isBrainMode = false;
+      let brainData = null;
+      
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
       if (activeAttemptId) {
-        // F6: We are submitting a step for an active problem
         const { checkStep } = await import('../../api');
         const data = await checkStep(activeAttemptId, currentStepNumber, userMsg, previousSteps);
         
@@ -135,53 +129,40 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
           setPreviousSteps(prev => [...prev, userMsg]);
           setCurrentStepNumber(prev => prev + 1);
         } else {
-          // If the AI says it's unrelated to the current problem (conceptual error about the topic itself),
-          // we might want to warn the user or allow them to break out.
           responseText = `❌ **Incorrect**\n\n**Error Type:** \`${data.error_type || "conceptual"}\`\n\n${data.explanation || ""}`;
-          if (data.corrective_guidance) {
-            responseText += `\n\n💡 *Direction:* ${data.corrective_guidance}`;
-          }
-          if (data.correct_step) {
-            responseText += `\n\n**Correct Step Revealed:**\n\n$$${data.correct_step}$$`;
-          }
+          if (data.corrective_guidance) responseText += `\n\n💡 *Direction:* ${data.corrective_guidance}`;
+          if (data.correct_step) responseText += `\n\n**Correct Step Revealed:**\n\n$$${data.correct_step}$$`;
         }
       } else {
-        // Submitting a brand new problem
         if (mode === 'brain') {
-          const { askQuestion } = await import('../../api');
-          const data = await askQuestion(userMsg, currentSessionId, controller.signal);
+          const { askQuestion, askImage } = await import('../../api');
+          const data = selectedImage 
+            ? await askImage(selectedImage, currentSessionId)
+            : await askQuestion(userMsg, currentSessionId, controller.signal);
+          
           setActiveAttemptId(data.attempt_id);
           setCurrentStepNumber(1);
           setPreviousSteps([]);
-          setHintLevel(1);
-          setHasUsedAllHints(false);
-
-          // Use the same pedagogical labeling as the backend
-          const isConceptual = data.pattern.toLowerCase().includes('conceptual') || data.pattern.toLowerCase().includes('theory');
-          const pLabel = isConceptual ? "The Big Idea" : "Pattern";
-          const mLabel = isConceptual ? "Core Principle" : "Method";
-          const sLabel = isConceptual ? "Context" : "Setup";
-          const fLabel = isConceptual ? "Next Step" : "First Step";
-
-          responseText = [
-            `**${pLabel}:** ${data.pattern}`,
-            `**${mLabel}:** ${data.method}`,
-            `**${sLabel}:** ${data.setup}`,
-            `**${fLabel}:** ${data.first_step}`,
-          ].join('\n\n');
+          setClassification(data.classification);
+          setBrainDetails({
+            pattern: data.pattern,
+            method: data.method,
+            setup: data.setup,
+            firstStep: data.first_step
+          });
+          
+          isBrainMode = true;
+          brainData = data;
+          responseText = "Let's build your thinking — not hand you the answer.";
         } else {
-          // SOS Mode
           const { askDirect } = await import('../../api');
           const data = await askDirect(userMsg, currentSessionId, controller.signal);
           setActiveAttemptId(null);
-          responseText = [
-            `**Instant Solution:**`,
-            `\n\n${data.final_answer}`,
-          ].join('\n\n');
+          responseText = `${data.final_answer}`;
         }
       }
       
-      setMessages(prev => [...prev, { role: 'assistant', content: responseText }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: responseText, isBrain: isBrainMode, brainData }]);
     } catch (error: any) {
       if (error.name === 'AbortError') {
         setMessages(prev => [...prev, { role: 'assistant', content: "Generation stopped by user." }]);
@@ -201,282 +182,358 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
     }
   };
 
-  return (
-    <div className="flex-1 flex flex-col relative h-full w-full mx-auto z-10 px-4 md:px-0 bg-transparent">
-      
-      {/* Mobile Header Menu Button */}
-      <div className="md:hidden absolute top-4 left-4 z-50">
-        <button 
-          onClick={onMenuClick}
-          className="p-2 bg-white/5 border border-white/10 rounded-xl text-gray-300 hover:text-white hover:bg-white/10 transition-colors backdrop-blur-md"
-        >
-          <Menu size={20} />
-        </button>
-      </div>
+  const renderMessage = (msg: any, idx: number) => {
+    return (
+      <motion.div 
+        key={idx} 
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className={`mr ${msg.role === 'user' ? 'u' : 'ai'}`}
+      >
+        <div className={`mav ${msg.role === 'user' ? 'u' : 'ai'}`}>
+          {msg.role === 'user' ? 'D' : 'Φ'}
+        </div>
+        <div style={{ maxWidth: '86%' }}>
+          <div className="bbl">
+            <ReactMarkdown 
+              remarkPlugins={[remarkMath]} 
+              rehypePlugins={[rehypeKatex]}
+              components={{
+                p: ({node, ...props}) => <span {...props} />, // Prevent nested p tags if needed
+              }}
+            >
+              {msg.content.replace(/\\\(/g, '$').replace(/\\\)/g, '$').replace(/\\\[/g, '$$').replace(/\\\]/g, '$$')}
+            </ReactMarkdown>
+            
+            {msg.isBrain && msg.brainData && (
+              <div className="brain-card">
+                <div className="bc-lbl">Brain Mode</div>
+                <div className="stp">
+                  <span className="sn" style={{ fontSize: 11.5 }}>01</span>
+                  <span className="st" style={{ fontSize: 12.5 }}><b>Pattern:</b> {msg.brainData.pattern}</span>
+                </div>
+                <div className="stp">
+                  <span className="sn" style={{ fontSize: 11.5 }}>02</span>
+                  <span className="st" style={{ fontSize: 12.5 }}><b>Method:</b> {msg.brainData.method}</span>
+                </div>
+                <div className="stp">
+                  <span className="sn">03</span>
+                  <span className="st"><b>Setup:</b> {msg.brainData.setup}</span>
+                </div>
+                <div className="stp">
+                  <span className="sn">→</span>
+                  <span className="st"><b>First move:</b> {msg.brainData.first_step}</span>
+                </div>
+                <div className="wh">Answer withheld — work it out ↑ </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
 
+  return (
+    <div className="main-container">
+      <PhiCursor />
       {showCalculator && (
         <SciCalculator onClose={() => setShowCalculator(false)} onInsert={(val) => setInput(prev => prev + val)} />
       )}
 
-      {/* Scrollable Chat Area */}
-      <div className="flex-1 overflow-y-auto pt-16 pb-10 [&::-webkit-scrollbar]:hidden scroll-smooth w-full flex justify-center">
-        {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center w-full max-w-[800px] mt-[5vh]">
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 1, ease: [0.16, 1, 0.3, 1] }}
-              className="flex flex-col items-center mb-16 relative"
-            >
-              <div className="relative mb-8 group cursor-default">
-                <div className="absolute inset-[-40px] bg-gradient-to-r from-[#7C3AED]/20 to-[#4F46E5]/20 blur-[50px] opacity-60 animate-pulse duration-[3000ms] rounded-full mix-blend-screen"></div>
-                <div className="w-[84px] h-[84px] rounded-3xl bg-[#0A0A0A]/80 backdrop-blur-2xl border border-white/[0.08] flex items-center justify-center shadow-[0_0_80px_rgba(124,58,237,0.2)] relative z-10 hover:border-[#7C3AED]/40 transition-all duration-700">
-                  <CognifyLogo className="w-12 h-12" />
-                </div>
-              </div>
-              <h1 className="text-[36px] md:text-[52px] font-bold text-transparent bg-clip-text bg-gradient-to-b from-[#FFFFFF] to-[#A1A1AA] text-center mb-4 tracking-tight leading-none px-4">
-                How can I help you today?
-              </h1>
-              <p className="text-[#A1A1AA] text-lg font-medium tracking-wide">Premium intelligence at your fingertips.</p>
-            </motion.div>
+      {/* LEFT: Chat Column */}
+      <div className="chat-col">
+        {/* New Pro Header */}
+        <div style={{ height: 60, display: 'flex', alignItems: 'center', padding: '0 24px', borderBottom: '1px solid var(--bdr)', background: 'rgba(5,5,5,0.8)', backdropFilter: 'blur(20px)', zIndex: 30 }}>
+          <button onClick={onMenuClick} className="p-2 text-tlo hover:text-thi transition-colors md:hidden mr-2">
+            <Menu size={20}/>
+          </button>
+          
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--thi)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, color: 'var(--bg)', fontFamily: "'Cormorant Garamond', serif", fontWeight: 700 }}>Φ</div>
+            <span style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: 'var(--thi)', letterSpacing: '.03em' }}>
+              Phi<em style={{ color: 'var(--tmd)', fontStyle: 'italic' }}>Prep</em>
+            </span>
+          </div>
 
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.2 }}
-              className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full relative z-20 px-4 md:px-0"
-            >
-              {suggestions.map((item, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setInput(item.text + ": ")}
-                  className="group flex flex-col items-start p-6 rounded-[20px] bg-[#0A0A0A]/40 backdrop-blur-md border border-white/[0.04] shadow-[0_4px_24px_rgba(0,0,0,0.2)] hover:border-[#7C3AED]/40 hover:bg-[#0A0A0A]/60 transition-all duration-500 text-left relative overflow-hidden"
-                >
-                  <div className="absolute inset-0 bg-gradient-to-br from-white/[0.02] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="flex items-center gap-4 mb-3 relative z-10">
-                    <div className="w-10 h-10 rounded-[12px] bg-white/[0.03] border border-white/[0.05] flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-inner">
-                      <item.icon className={`w-[18px] h-[18px] ${item.color} opacity-80 group-hover:opacity-100 transition-opacity`} />
-                    </div>
-                    <span className="font-semibold text-[#EDEDED] text-[16px] tracking-tight">{item.text}</span>
-                  </div>
-                  <span className="text-[14px] text-[#A1A1AA] group-hover:text-[#D4D4D8] transition-colors leading-relaxed relative z-10">
-                    {item.desc}
-                  </span>
-                </button>
-              ))}
-            </motion.div>
-            <div className="h-[200px] shrink-0 w-full" />
+          <div style={{ flex: 1 }} />
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button className="pp-nav-btn">Contact</button>
+            <button className="pp-nav-btn">About</button>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--s3)', border: '1px solid var(--bdrhi)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12.5, fontWeight: 700, color: 'var(--thi)' }}>
+              {profile?.name ? profile.name[0].toUpperCase() : 'G'}
+            </div>
           </div>
-        ) : (
-          <div className="max-w-[800px] w-full mx-auto flex flex-col gap-8 pb-10 mt-6 px-4 md:px-0">
-            <AnimatePresence>
-              {messages.map((msg, idx) => (
-                <motion.div
-                  key={idx}
-                  initial={{ opacity: 0, y: 15 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className={`flex gap-5 w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {msg.role === 'assistant' && (
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#0A0A0A] to-[#1A1A1A] border border-white/[0.08] flex items-center justify-center shadow-lg shrink-0 mt-1">
-                      <CognifyLogo className="w-[22px] h-[22px]" />
-                    </div>
-                  )}
-                  
-                  <div className={`flex flex-col max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                    <div 
-                      className={`px-5 py-3.5 rounded-[22px] text-[15px] leading-relaxed shadow-sm ${
-                        msg.role === 'user' 
-                          ? 'bg-[#EDEDED] text-[#000000] rounded-br-sm font-medium' 
-                          : 'bg-[#0A0A0A]/60 backdrop-blur-md border border-white/[0.06] text-[#EDEDED] rounded-bl-sm shadow-[0_4px_20px_rgba(0,0,0,0.2)] prose prose-invert max-w-none prose-p:leading-relaxed prose-pre:bg-[#1A1A1A] prose-pre:border prose-pre:border-gray-800 focus:outline-none'
-                      }`}
-                    >
-                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                        {msg.content}
-                      </ReactMarkdown>
-                    </div>
-                  </div>
-                </motion.div>
-              ))}
-              
+        </div>
+
+        <div className="msgs-area" style={{ marginLeft: isSidebarCollapsed ? 0 : 0 }}>
+          {messages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-center p-8">
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="w-16 h-16 mb-6 rounded-2xl bg-s4 flex items-center justify-center border border-bdrhi shadow-lg"
+              >
+                <PhyPrepLogo className="w-10 h-10" />
+              </motion.div>
+              <h2 className="text-2xl font-bold text-thi mb-2 tracking-tight">How can I help you today?</h2>
+              <p className="text-tlo max-w-sm font-medium" style={{ fontSize: 13 }}>Ask any question in Calculus, Algebra, or Mechanics and I'll help you solve it step-by-step.</p>
+            </div>
+          ) : (
+            <>
+              {messages.map((msg, idx) => renderMessage(msg, idx))}
               {isLoading && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                  className="flex gap-5 w-full justify-start"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-[#0A0A0A]/60 border border-white/[0.08] flex items-center justify-center shadow-lg shrink-0 mt-1">
-                    <Loader2 className="w-4 h-4 text-[#7C3AED] animate-spin" />
+                <div className="mr ai">
+                  <div className="mav ai">Φ</div>
+                  <div className="tbbl">
+                    <div className="td"></div><div className="td"></div><div className="td"></div>
                   </div>
-                  <div className="flex items-center px-5 py-3.5 rounded-[22px] rounded-bl-sm bg-[#0A0A0A]/60 backdrop-blur-md border border-white/[0.06]">
-                    <span className="text-[#A1A1AA] text-sm animate-pulse flex gap-1 items-center">
-                      <Sparkles className="w-3.5 h-3.5 text-[#7C3AED]" /> Thinking...
-                    </span>
-                  </div>
-                </motion.div>
+                </div>
               )}
-            </AnimatePresence>
-            <div className="h-[200px] shrink-0 w-full" />
-            <div ref={messagesEndRef} />
+              <div ref={messagesEndRef} />
+            </>
+          )}
+        </div>
+
+        <div className="input-bar">
+          <div className="input-row">
+            <div className="input-icons">
+              <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+              <button className="iico" onClick={() => fileInputRef.current?.click()} title="Upload image">📷</button>
+              <button className="iico" onClick={() => setShowCalculator(true)} title="Calculator">∑</button>
+            </div>
+            <textarea 
+              ref={textareaRef}
+              className="main-input" 
+              placeholder="Enter something!!" 
+              rows={1}
+              value={input}
+              onChange={(e) => {
+                setInput(e.target.value);
+                if (textareaRef.current) {
+                  textareaRef.current.style.height = '32px';
+                  textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
+                }
+              }}
+              style={{ fontSize: 13 }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
+            {isLoading ? (
+              <button onClick={handleStop} className="send-btn" style={{background: 'var(--danger)'}}>
+                <X size={14} color="white" />
+              </button>
+            ) : (
+              <button className="send-btn" onClick={handleSend} disabled={!input.trim() && !selectedImage}>
+                <Send size={13} color="var(--bg)" />
+              </button>
+            )}
           </div>
-        )}
+          
+          <div className="flex justify-between items-center mt-1">
+            <div className="mode-tog">
+              <button 
+                className={`mb-tog brain ${mode === 'brain' ? 'act' : ''}`}
+                onClick={() => setMode('brain')}
+              >Brain</button>
+              <button 
+                className={`mb-tog sos ${mode === 'sos' ? 'act' : ''}`}
+                onClick={() => setMode('sos')}
+              >SOS</button>
+            </div>
+            {activeAttemptId && (
+              <button className="sos-button" onClick={async () => {
+                const { getSos } = await import('../../api');
+                const data = await getSos(activeAttemptId);
+                setMessages(prev => [...prev, { role: 'assistant', content: `**Instant Solution:**\n\n${data.final_answer}` }]);
+                setActiveAttemptId(null);
+              }}>
+                🆘 SOS — show full solution
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Input Area */}
-      <div className="absolute bottom-0 left-0 right-0 p-4 md:p-6 pt-24 bg-gradient-to-t from-[#000000] via-[#000000]/95 to-transparent z-30 flex justify-center pb-8 border-t-0">
-        <div className="max-w-[800px] w-full relative group">
-          
-          {/* Custom Form elements */}
-          <div className="relative">
-            {/* Soft background aura */}
-            <div className="absolute -inset-[1px] bg-gradient-to-r from-[#7C3AED]/40 to-[#4F46E5]/40 rounded-[32px] blur-md opacity-0 group-focus-within:opacity-100 transition-opacity duration-700 pointer-events-none"></div>
-            
-            <div className="relative flex flex-col bg-[#0A0A0A]/80 backdrop-blur-3xl border border-white/[0.08] rounded-[28px] p-2 shadow-[0_8px_40px_rgba(0,0,0,0.4)] transition-all duration-500 group-focus-within:border-[#7C3AED]/50 group-focus-within:bg-[#0A0A0A]/95 group-focus-within:shadow-[0_0_50px_rgba(124,58,237,0.15)]">
-              
-              {/* Keyboard Row */}
-              <FloatingKeyboard onInsert={(sym) => setInput(p => p + sym)} onOpenCalculator={() => setShowCalculator(true)} />
-              
-              {/* Image Preview */}
-              {selectedImage && (
-                <div className="flex items-center gap-3 px-4 py-2 mt-4 ml-2 max-w-max bg-white/5 rounded-xl border border-white/10">
-                  <div className="w-8 h-8 rounded shrink-0 bg-gray-800 flex items-center justify-center overflow-hidden">
-                    <ImageIcon size={16} className="text-gray-400" />
-                  </div>
-                  <span className="text-sm truncate text-gray-300 max-w-[150px]">{selectedImage.name}</span>
-                  <button onClick={() => setSelectedImage(null)} className="text-gray-500 hover:text-white transition-colors ml-2">
-                    <X size={16} />
-                  </button>
+      {/* RIGHT: Intelligence Column */}
+      <div className="right-grid">
+        
+        {/* Card 1: Concept Clarification */}
+        <div className="info-card">
+          <div className="card-hd">Concept clarification</div>
+          <div className="cc-meta">
+            <div className="cc-row">
+              <span className="cc-key">Subject</span>
+              <span className="cc-val hl">{classification?.subject || '—'}</span>
+            </div>
+            <div className="cc-row">
+              <span className="cc-key">Topic</span>
+              <span className="cc-val">{classification?.topic || '—'}</span>
+            </div>
+            <div className="cc-row">
+              <span className="cc-key">Subtopic</span>
+              <span className="cc-val">{classification?.subtopic || '—'}</span>
+            </div>
+            <div className="cc-row">
+              <span className="cc-key">Difficulty</span>
+              <div>
+                <span className="cc-val" style={{textTransform: 'capitalize'}}>{classification?.difficulty.replace('_', ' ') || '—'}</span>
+                <div className="diff-row">
+                  {[1, 2, 3, 4].map(n => (
+                    <div key={n} className={`dd ${classification ? (
+                      (classification.difficulty === 'easy' && n <= 1) ||
+                      (classification.difficulty === 'medium' && n <= 2) ||
+                      (classification.difficulty === 'hard' && n <= 3) ||
+                      (classification.difficulty === 'jee_advanced' && n <= 4)
+                    ) ? 'on' : '' : ''}`} />
+                  ))}
                 </div>
-              )}
-
-              <div className="flex items-end px-2 pb-1 pt-1 mt-6">
-                
-                {/* Mode Toggle & Image Upload */}
-                <div className="flex items-center gap-2 mb-1 shrink-0 px-2 h-10">
-                  <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
-                  <button onClick={() => fileInputRef.current?.click()} className="text-gray-400 hover:text-white p-2 rounded-xl hover:bg-white/5 transition-colors" title="Upload Image">
-                    <ImageIcon size={20} />
-                  </button>
-                  
-                  {/* Hint and Solution Buttons */}
-                  <div className="flex items-center gap-2">
-                    {activeAttemptId ? (
-                      <div className="flex items-center bg-black/50 rounded-xl p-1 border border-white/10 gap-1">
-                        <button 
-                          onClick={handleGetHint}
-                          disabled={isLoading || hasUsedAllHints}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-purple-900/30 text-purple-300 border border-purple-500/30 shadow-lg flex items-center gap-1.5 whitespace-nowrap disabled:opacity-50"
-                        >
-                          <Lightbulb size={12} /> {hasUsedAllHints ? 'Hints Exhausted' : 'Get Hint'}
-                        </button>
-                        <button 
-                          onClick={async () => {
-                            if (!activeAttemptId || isLoading) return;
-                            setIsLoading(true);
-                            try {
-                              const { getSos } = await import('../../api');
-                              const data = await getSos(activeAttemptId);
-                              
-                              let formattedSos = "**Instant Solution:**\n\n";
-                              if (data.solution_steps && data.solution_steps.length > 0) {
-                                data.solution_steps.forEach((s: any) => {
-                                  formattedSos += `**Step ${s.step_number}:** ${s.expression}\n_${s.explanation}_\n\n`;
-                                });
-                              }
-                              formattedSos += `**Final Answer:** ${data.final_answer}`;
-
-                              setMessages(prev => [...prev, { role: 'assistant', content: formattedSos }]);
-                              setHasUsedAllHints(false);
-                              setActiveAttemptId(null); // End the step-by-step session
-                            } catch (e) {
-                              setMessages(prev => [...prev, { role: 'assistant', content: "Failed to load SOS solution." }]);
-                            } finally {
-                              setIsLoading(false);
-                            }
-                          }}
-                          disabled={isLoading}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-red-900/30 text-red-400 border border-red-800/50 shadow-lg flex items-center gap-1.5 whitespace-nowrap"
-                        >
-                          <Lightbulb size={12} /> Solution
-                        </button>
-                        <button 
-                          onClick={() => {
-                            setActiveAttemptId(null);
-                            setHasUsedAllHints(false);
-                            setPreviousSteps([]);
-                            setCurrentStepNumber(1);
-                          }}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors bg-white/5 text-gray-400 border border-white/10 hover:bg-white/10 flex items-center gap-1.5"
-                          title="Finish this question and start a new one"
-                        >
-                          <X size={12} /> Clear
-                        </button>
-                      </div>
-                    ) : (
-                      <>
-                        <button 
-                          onClick={() => setMode('brain')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${mode === 'brain' ? 'bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 shadow-lg' : 'text-gray-500 hover:text-gray-300'} flex items-center gap-1.5`}
-                        >
-                          <Sparkles size={12} /> Brain 
-                        </button>
-                        <button 
-                          onClick={() => setMode('sos')}
-                          className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${mode === 'sos' ? 'bg-red-900/30 text-red-400 border border-red-800/50 shadow-lg' : 'text-gray-500 hover:text-gray-300'} flex items-center gap-1.5`}
-                        >
-                          <Lightbulb size={12} /> SOS
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-                <textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => {
-                    setInput(e.target.value);
-                    if (textareaRef.current) {
-                      textareaRef.current.style.height = '44px';
-                      textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 120)}px`;
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      if (input.trim() || selectedImage) handleSend();
-                    }
-                  }}
-                  placeholder={activeAttemptId ? "Enter your next step..." : `Ask Cognify in ${mode === 'brain' ? 'Brain' : 'SOS'} Mode...`}
-                  className="flex-1 bg-transparent border-none outline-none text-[#EDEDED] placeholder-[#71717A] text-[15px] py-2 px-3 pl-4 font-normal tracking-wide resize-none min-h-[44px] max-h-[120px] leading-relaxed"
-                  rows={1}
-                  style={{ height: '44px' }}
-                />
-                
-                {isLoading ? (
-                  <button 
-                    onClick={handleStop}
-                    className="p-3 mb-1 ml-2 bg-red-600/20 hover:bg-red-600/40 text-red-500 rounded-2xl flex items-center justify-center transition-all duration-300 shrink-0 h-[44px] w-[44px]"
-                  >
-                    <div className="w-4 h-4 bg-red-500 rounded-sm"></div>
-                  </button>
-                ) : (
-                  <button 
-                    onClick={() => handleSend()}
-                    disabled={(!input.trim() && !selectedImage) || isLoading}
-                    className={`p-3 mb-1 ml-2 rounded-2xl flex items-center justify-center transition-all duration-300 shrink-0 h-[44px] w-[44px] ${
-                      (input.trim() || selectedImage) && !isLoading
-                        ? 'bg-gradient-to-br from-[#7C3AED] to-[#4F46E5] text-white shadow-[0_0_20px_rgba(124,58,237,0.4)] hover:scale-105 hover:shadow-[0_0_30px_rgba(124,58,237,0.6)] cursor-pointer' 
-                        : 'bg-white/[0.04] text-[#52525B] cursor-not-allowed'
-                    }`}
-                  >
-                    <Send className={`w-[18px] h-[18px] ml-0.5 ${(input.trim() || selectedImage) && !isLoading ? 'translate-x-[2px] -translate-y-[2px] transition-transform' : ''}`} />
-                  </button>
-                )}
               </div>
             </div>
           </div>
+          <div className="card-divider"></div>
+          <div className="cc-section-lbl">Pattern</div>
+          <div className="cc-pattern">{brainDetails?.pattern || 'Waiting for input...'}</div>
+          <div className="cc-section-lbl" style={{marginTop:8}}>Method</div>
+          <div className="cc-method">
+            <div className="cc-method-lbl">Approach</div>
+            {brainDetails?.method || 'The pedagogical strategy will appear here.'}
+          </div>
+        </div>
+
+        {/* Card 2: Formula or Definition */}
+        <div className="info-card">
+          <div className="card-hd" style={{ fontSize: 12.5 }}>Formula or definition</div>
+          <div className="formula-item">
+            <div className="fi-label">TOPIC DEFINITION</div>
+            <div className="fi-val">
+              {classification?.definition || (classification ? `${classification.topic}: A core concept in ${classification.subject}.` : 'Knowledge base is idle.')}
+            </div>
+          </div>
+          <div className="formula-item">
+            <div className="fi-label">KEY FORMULA</div>
+            <div className="fi-val formula scrollable-box">
+              {classification?.formula ? (
+                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {classification.formula}
+                </ReactMarkdown>
+              ) : classification ? (
+                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                  {classification.subject === 'Mathematics' ? '$∫ u \\, dv = uv - ∫ v \\, du$' : classification.subject === 'Physics' ? '$F = ma$' : '$PV = nRT$'}
+                </ReactMarkdown>
+              ) : '—'}
+            </div>
+          </div>
+          <div className="formula-item">
+            <div className="fi-label">RELATED CASES</div>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {['Standard Case', 'Advanced', 'Corner case'].map(tag => (
+                <span key={tag} className="related-tag" style={{ fontSize: 11.5 }}>{tag}</span>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Hints (Redesigned) */}
+        <div className="info-card">
+          <div className="card-hd" style={{ fontSize: 12.5 }}>Hints</div>
           
-          <div className="text-center mt-3 text-[11px] text-[#71717A] font-medium tracking-wide">
-            Cognify can make mistakes. Consider verifying important information.
+          <div className="hint-card-new">
+            {[1, 2, 3].map(lvl => (
+              <div 
+                key={lvl} 
+                className="hint-row"
+                style={{ cursor: (!activeAttemptId || revealedHints[lvl]) ? 'default' : 'pointer' }}
+                onClick={async () => {
+                  if (!activeAttemptId || revealedHints[lvl]) return;
+                  if (lvl > 1 && !revealedHints[lvl - 1]) return; // sequential constraint
+                  
+                  const { getHint } = await import('../../api');
+                  try {
+                    const data = await getHint(activeAttemptId, lvl);
+                    setRevealedHints(prev => ({ ...prev, [lvl]: data.hint_text }));
+                  } catch (e) {
+                    console.error("Failed to fetch hint");
+                  }
+                }}
+              >
+                <div className="hint-lvl">H{lvl}</div>
+                <div className="hint-body">
+                  {revealedHints[lvl] ? (
+                    <div style={{ color: 'var(--thi)' }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, color: 'var(--tlo)', marginBottom: 2 }}>{lvl === 1 ? 'Concept hint' : lvl === 2 ? 'Approach hint' : 'Final hint'}</div>
+                      <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                        {revealedHints[lvl]}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <span style={{ color: 'var(--tlo)' }}>{lvl === 1 ? 'Concept hint' : lvl === 2 ? 'Approach hint' : 'Final hint'}</span>
+                  )}
+                </div>
+                {revealedHints[lvl] && <div className="hint-check">✓</div>}
+              </div>
+            ))}
+          </div>
+          
+          <div style={{ marginTop: 16, fontSize: 11.5, color: 'var(--tlo)', textAlign: 'center', fontStyle: 'italic' }}>
+            {Object.keys(revealedHints).length === 3 
+              ? "You've seen all hints — now trust yourself and solve it. You're got this. 💪"
+              : "Hints unlock as you progress"}
+          </div>
+        </div>
+
+        {/* Card 4: Topic Understanding */}
+        <div className="info-card">
+          <div className="card-hd">Topic Understanding</div>
+          <div className="tu-topic">
+            Strength in <strong>{classification?.topic || 'current topic'}</strong>:
+          </div>
+          
+          <div className="tu-bar-wrap">
+            <div className="tu-bar-label">
+              <span>Overall Accuracy</span>
+              <span>{classification ? '68%' : '—'}</span>
+            </div>
+            <div className="tu-track">
+              <div className="tu-fill" style={{width: classification ? '68%' : '0%'}}></div>
+            </div>
+          </div>
+
+          <div className="tu-tags">
+            <span className="tu-tag strong">Concept Ready</span>
+            <span className="tu-tag ok">Calculation</span>
+            <span className="tu-tag weak">IBP Patterns</span>
+          </div>
+
+          <div className="tu-sessions">
+            <div className="tu-sessions-lbl">Recent Activity</div>
+            {topicStats.length > 0 ? topicStats.map((s, i) => (
+              <div key={i} className="tu-session-row">
+                <div className={`ts-dot ${s.status === 'green' ? 'g' : s.status === 'yellow' ? 'y' : 'r'}`}></div>
+                <div className="ts-topic">{s.topic}</div>
+                <div className="ts-track">
+                  <div className={`ts-fill ${s.status === 'green' ? 'g' : s.status === 'yellow' ? 'y' : 'r'}`} style={{width: `${s.accuracy_pct}%`}}></div>
+                </div>
+                <div className="ts-pct">{Math.round(s.accuracy_pct)}%</div>
+              </div>
+            )) : [
+              { t: 'Integration', p: 85, s: 'g' },
+              { t: 'Differentiation', p: 40, s: 'y' },
+              { t: 'Limits', p: 20, s: 'r' }
+            ].map((s, i) => (
+              <div key={i} className="tu-session-row">
+                <div className={`ts-dot ${s.s}`}></div>
+                <div className="ts-topic">{s.t}</div>
+                <div className="ts-track">
+                  <div className={`ts-fill ${s.s}`} style={{width: `${s.p}%`}}></div>
+                </div>
+                <div className="ts-pct">{s.p}%</div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

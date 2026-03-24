@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhiPrep — Let's set you up</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=DM+Mono:wght@400;500&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:    #0a0a0a;
+  --s1:    #0f0f0f;
+  --s2:    #161616;
+  --s3:    #1e1e1e;
+  --s4:    #252525;
+  --s5:    #2e2e2e;
+  --thi:   #f0f0f0;
+  --tmd:   #a8a8a8;
+  --tlo:   #585858;
+  --tdm:   #2e2e2e;
+  --bdr:   rgba(255,255,255,0.08);
+  --bdrhi: rgba(255,255,255,0.16);
+  --bdr2:  rgba(255,255,255,0.24);
+  --danger:#d05040;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{
+  background:var(--bg);
+  color:var(--thi);
+  font-family:'Jost',sans-serif;
+  display:flex;flex-direction:column;
+  height:100vh; overflow:hidden;
+}
+
+/* ── PROGRESS BAR ── */
+.progress-bar {
+  height:2px; background:var(--s3);
+  flex-shrink:0; position:relative; overflow:hidden;
+}
+.progress-fill {
+  height:100%; background:var(--thi);
+  transition:width .5s cubic-bezier(.4,0,.2,1);
+  position:relative;
+}
+.progress-fill::after{
+  content:'';
+  position:absolute;right:0;top:0;bottom:0;
+  width:40px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.6));
+}
+
+/* ── HEADER ── */
+.ob-header {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:18px 32px; flex-shrink:0;
+  border-bottom:1px solid var(--bdr);
+}
+.ob-logo {
+  font-family:'Cormorant Garamond',serif;
+  font-size:19px; font-weight:600;
+  color:var(--thi); display:flex; align-items:center; gap:8px;
+  text-decoration:none;
+}
+.ob-logo-mark{
+  width:26px;height:26px;border-radius:7px;
+  background:var(--thi); display:flex;align-items:center;justify-content:center;
+  font-size:14px;color:var(--bg);font-family:'Cormorant Garamond',serif;font-weight:600;
+}
+.ob-logo em{color:var(--tmd);font-style:italic;}
+.ob-step-label {
+  font-family:'DM Mono',monospace;
+  font-size:11px; color:var(--tlo); letter-spacing:.06em;
+}
+.ob-skip {
+  font-size:12px; color:var(--tlo); cursor:pointer;
+  background:none; border:none; font-family:'Jost',sans-serif;
+  transition:color .2s; padding:4px 0;
+}
+.ob-skip:hover{color:var(--tmd);}
+
+/* ── MAIN AREA ── */
+.ob-main {
+  flex:1; overflow:hidden; position:relative;
+}
+
+/* ── SCREEN ── */
+.screen {
+  position:absolute; inset:0;
+  display:flex; flex-direction:column;
+  align-items:center; justify-content:center;
+  padding:32px 24px 24px;
+  opacity:0; pointer-events:none;
+  transition:opacity .35s ease, transform .35s cubic-bezier(.4,0,.2,1);
+  transform:translateX(60px);
+}
+.screen.active {
+  opacity:1; pointer-events:all; transform:translateX(0);
+}
+.screen.exit-left {
+  opacity:0; transform:translateX(-60px);
+}
+
+.screen-inner {
+  width:100%; max-width:520px;
+  display:flex; flex-direction:column;
+  align-items:center; text-align:center;
+}
+
+/* ── BIG EMOJI ── */
+.screen-emoji {
+  font-size:52px; margin-bottom:20px;
+  animation:emojiPop .5s cubic-bezier(.34,1.56,.64,1) both;
+}
+@keyframes emojiPop{from{transform:scale(0) rotate(-10deg)}to{transform:scale(1) rotate(0)}}
+
+.screen-heading {
+  font-family:'Cormorant Garamond',serif;
+  font-size:32px; font-weight:600;
+  color:var(--thi); margin-bottom:8px;
+  line-height:1.15;
+}
+.screen-sub {
+  font-size:14px; color:var(--tlo);
+  line-height:1.6; max-width:380px;
+  margin-bottom:36px;
+}
+
+/* ── OPTION GRID ── */
+.opt-grid {
+  display:grid;
+  gap:10px; width:100%;
+  margin-bottom:8px;
+}
+.opt-grid.cols-2{grid-template-columns:1fr 1fr;}
+.opt-grid.cols-3{grid-template-columns:1fr 1fr 1fr;}
+
+.opt-card {
+  background:var(--s2); border:1px solid var(--bdr);
+  border-radius:14px; padding:16px 12px;
+  cursor:pointer; transition:all .22s;
+  display:flex; flex-direction:column;
+  align-items:center; gap:8px;
+  user-select:none; position:relative;
+  overflow:hidden;
+}
+.opt-card::before{
+  content:'';
+  position:absolute;top:0;left:0;right:0;height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.12),transparent);
+  opacity:0; transition:opacity .2s;
+}
+.opt-card:hover{background:var(--s3);border-color:var(--bdrhi);}
+.opt-card:hover::before{opacity:1;}
+.opt-card.sel{
+  background:rgba(255,255,255,0.06);
+  border-color:var(--bdr2);
+}
+.opt-card.sel::before{opacity:1;}
+.opt-card.sel .opt-check{opacity:1;transform:scale(1);}
+
+.opt-icon{font-size:22px;line-height:1;}
+.opt-label{font-size:13px;font-weight:500;color:var(--tmd);}
+.opt-card.sel .opt-label{color:var(--thi);}
+.opt-sub{font-size:10.5px;color:var(--tdm);}
+.opt-card.sel .opt-sub{color:var(--tlo);}
+
+.opt-check{
+  position:absolute;top:8px;right:8px;
+  width:16px;height:16px;border-radius:50%;
+  background:var(--thi);
+  display:flex;align-items:center;justify-content:center;
+  font-size:9px;color:var(--bg);font-weight:700;
+  opacity:0;transform:scale(.4);
+  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+}
+
+/* ── SUBJECT CHIPS ── */
+.subj-grid {
+  display:flex; flex-wrap:wrap; gap:10px;
+  justify-content:center; width:100%; margin-bottom:8px;
+}
+.subj-chip {
+  display:flex; align-items:center; gap:8px;
+  padding:11px 18px; border-radius:40px;
+  border:1px solid var(--bdr); background:var(--s2);
+  cursor:pointer; transition:all .2s; user-select:none;
+  position:relative; overflow:hidden;
+}
+.subj-chip:hover{border-color:var(--bdrhi);background:var(--s3);}
+.subj-chip.sel{background:rgba(255,255,255,0.07);border-color:var(--bdr2);}
+.subj-chip-icon{font-size:16px;}
+.subj-chip-name{font-size:13.5px;font-weight:500;color:var(--tmd);}
+.subj-chip.sel .subj-chip-name{color:var(--thi);}
+
+/* ── GOAL SLIDER ── */
+.goal-section{width:100%;margin-bottom:8px;}
+.goal-display {
+  font-family:'Cormorant Garamond',serif;
+  font-size:52px; font-weight:600; color:var(--thi);
+  text-align:center; margin-bottom:4px;
+  transition:all .2s;
+}
+.goal-unit{font-size:20px;color:var(--tmd);}
+.goal-label-row{
+  display:flex; justify-content:space-between;
+  font-size:11px; color:var(--tdm);
+  margin-bottom:14px; padding:0 4px;
+}
+.s-slider {
+  width:100%; height:4px; border-radius:2px;
+  background:var(--s5); outline:none; cursor:pointer;
+  -webkit-appearance:none; appearance:none; margin-bottom:16px;
+}
+.s-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:20px;height:20px;border-radius:50%;
+  background:var(--thi);cursor:pointer;
+  border:3px solid var(--bg);
+  box-shadow:0 0 0 1.5px var(--bdrhi);
+}
+.s-slider::-moz-range-thumb{
+  width:20px;height:20px;border-radius:50%;
+  background:var(--thi);cursor:pointer;border:3px solid var(--bg);
+}
+.goal-desc{font-size:12px;color:var(--tlo);text-align:center;min-height:20px;}
+
+/* ── WELCOME SCREEN ── */
+.welcome-name {
+  font-family:'Cormorant Garamond',serif;
+  font-size:40px; font-weight:600; color:var(--thi);
+  margin-bottom:4px;
+}
+.welcome-tagline{
+  font-size:14px;color:var(--tlo);margin-bottom:36px;max-width:340px;
+}
+.summary-grid{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:10px; width:100%; margin-bottom:32px;
+}
+.sum-card{
+  background:var(--s2);border:1px solid var(--bdr);
+  border-radius:12px;padding:14px 16px;text-align:left;
+}
+.sum-lbl{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--tlo);margin-bottom:4px;}
+.sum-val{font-size:14px;font-weight:500;color:var(--thi);}
+
+/* ── BOTTOM ── */
+.ob-bottom {
+  padding:20px 24px 28px;
+  display:flex; align-items:center; gap:12px;
+  flex-shrink:0; max-width:568px; width:100%; margin:0 auto;
+}
+.btn-next {
+  flex:1; padding:13px;
+  background:var(--thi);color:var(--bg);
+  border:none;border-radius:10px;
+  font-family:'Jost',sans-serif;font-size:13.5px;font-weight:700;
+  letter-spacing:.04em;cursor:pointer;
+  transition:all .2s;
+}
+.btn-next:hover{background:#e0e0e0;transform:translateY(-1px);}
+.btn-back-mob {
+  width:44px;height:44px;border-radius:10px;
+  background:var(--s2);border:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;flex-shrink:0;
+  transition:all .2s;
+}
+.btn-back-mob:hover{border-color:var(--bdrhi);}
+.btn-back-mob.hidden{opacity:0;pointer-events:none;}
+
+/* ── STEP DOTS ── */
+.step-dots {
+  display:flex;gap:6px;justify-content:center;
+  margin-bottom:16px;
+}
+.dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--s5);transition:all .3s ease;
+}
+.dot.act{width:20px;border-radius:3px;background:var(--thi);}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  .ob-header { padding:14px 16px; }
+  .left-inner { padding:24px 16px 32px; }
+  .screen { padding:20px 16px 16px; }
+  .screen-heading { font-size:26px; }
+  .screen-sub { font-size:13px; margin-bottom:24px; }
+  .screen-emoji { font-size:40px; margin-bottom:14px; }
+  /* 3-col grids → 2-col on small phones */
+  .opt-grid.cols-3 { grid-template-columns:1fr 1fr; }
+  .opt-card { padding:13px 10px; }
+  .opt-icon { font-size:18px; }
+  .opt-label { font-size:12px; }
+  .opt-sub { font-size:9.5px; }
+  .goal-display { font-size:42px; }
+  .summary-grid { grid-template-columns:1fr; }
+  .ob-bottom { padding:14px 16px 20px; gap:8px; }
+  .btn-next { font-size:13px; padding:12px; }
+  .subj-chip { padding:9px 14px; }
+  .subj-chip-name { font-size:12.5px; }
+  .welcome-name { font-size:32px; }
+}
+@media(max-width:380px){
+  .opt-grid.cols-2, .opt-grid.cols-3 { grid-template-columns:1fr; }
+  .screen-heading { font-size:22px; }
+  .ob-step-label { display:none; }
+}
+</style>
+</head>
+<body>
+
+<!-- PROGRESS -->
+<div class="progress-bar">
+  <div class="progress-fill" id="progressFill" style="width:0%"></div>
+</div>
+
+<!-- HEADER -->
+<div class="ob-header">
+  <a href="#" class="ob-logo">
+    <div class="ob-logo-mark">Φ</div>
+    Phi<em>Prep</em>
+  </a>
+  <div class="ob-step-label" id="stepLabel">Step 1 of 4</div>
+  <button class="ob-skip" id="skipBtn" onclick="skipOnboarding()">Skip for now</button>
+</div>
+
+<!-- MAIN -->
+<div class="ob-main" id="obMain">
+
+  <!-- ── SCREEN 1: CLASS ── -->
+  <div class="screen active" id="screen-0">
+    <div class="screen-inner">
+      <div class="screen-emoji">🎓</div>
+      <div class="screen-heading">What's your class?</div>
+      <div class="screen-sub">We'll calibrate problem difficulty and pacing to your stage.</div>
+      <div class="opt-grid cols-3">
+        <div class="opt-card" onclick="selectOpt(this,'class','11')">
+          <span class="opt-check">✓</span>
+          <span class="opt-icon">📘</span>
+          <span class="opt-label">Class 11</span>
+          <span class="opt-sub">First year</span>
+        </div>
+        <div class="opt-card" onclick="selectOpt(this,'class','12')">
+          <span class="opt-check">✓</span>
+          <span class="opt-icon">📗</span>
+          <span class="opt-label">Class 12</span>
+          <span class="opt-sub">Final year</span>
+        </div>
+        <div class="opt-card" onclick="selectOpt(this,'class','dropper')">
+          <span class="opt-check">✓</span>
+          <span class="opt-icon">🔄</span>
+          <span class="opt-label">Dropper</span>
+          <span class="opt-sub">Repeating year</span>
+        </div>
+      </div>
+      <div class="step-dots" id="dots"></div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 2: EXAM + YEAR ── -->
+  <div class="screen" id="screen-1">
+    <div class="screen-inner">
+      <div class="screen-emoji">🎯</div>
+      <div class="screen-heading">Your target exam?</div>
+      <div class="screen-sub">PhiPrep tunes its problem selection, hints and SOS explanations to your specific exam pattern.</div>
+      <div class="opt-grid cols-2" style="margin-bottom:16px;">
+        <div class="opt-card" onclick="selectOpt(this,'exam','jee-main')">
+          <span class="opt-check">✓</span>
+          <span class="opt-icon">🔵</span>
+          <span class="opt-label">JEE Main</span>
+          <span class="opt-sub">MCQ + Numerical</span>
+        </div>
+        <div class="opt-card" onclick="selectOpt(this,'exam','jee-adv')">
+          <span class="opt-check">✓</span>
+          <span class="opt-icon">⚡</span>
+          <span class="opt-label">JEE Advanced</span>
+          <span class="opt-sub">IIT-level depth</span>
+        </div>
+        <div class="opt-card" onclick="selectOpt(this,'exam','neet')">
+          <span class="opt-check">✓</span>
+          <span class="opt-icon">🩺</span>
+          <span class="opt-label">NEET</span>
+          <span class="opt-sub">Biology focus</span>
+        </div>
+        <div class="opt-card" onclick="selectOpt(this,'exam','boards')">
+          <span class="opt-check">✓</span>
+          <span class="opt-icon">📋</span>
+          <span class="opt-label">Board Exams</span>
+          <span class="opt-sub">CBSE / State</span>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--tlo);margin-bottom:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;">Target year</div>
+      <div class="opt-grid cols-3">
+        <div class="opt-card" onclick="selectOpt(this,'year','2026')">
+          <span class="opt-check">✓</span>
+          <span class="opt-label" style="font-size:16px;font-family:'DM Mono',monospace">2026</span>
+          <span class="opt-sub">This year</span>
+        </div>
+        <div class="opt-card" onclick="selectOpt(this,'year','2027')">
+          <span class="opt-check">✓</span>
+          <span class="opt-label" style="font-size:16px;font-family:'DM Mono',monospace">2027</span>
+          <span class="opt-sub">Next year</span>
+        </div>
+        <div class="opt-card" onclick="selectOpt(this,'year','2028')">
+          <span class="opt-check">✓</span>
+          <span class="opt-label" style="font-size:16px;font-family:'DM Mono',monospace">2028</span>
+          <span class="opt-sub">2 years out</span>
+        </div>
+      </div>
+      <div class="step-dots" id="dots1"></div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 3: SUBJECTS ── -->
+  <div class="screen" id="screen-2">
+    <div class="screen-inner">
+      <div class="screen-emoji">📚</div>
+      <div class="screen-heading">Which subjects?</div>
+      <div class="screen-sub">Select all you want PhiPrep to focus on. You can change this in Settings later.</div>
+      <div class="subj-grid">
+        <div class="subj-chip sel" onclick="toggleSubj(this,'math')">
+          <span class="subj-chip-icon">∫</span>
+          <span class="subj-chip-name">Mathematics</span>
+        </div>
+        <div class="subj-chip sel" onclick="toggleSubj(this,'physics')">
+          <span class="subj-chip-icon">⚛</span>
+          <span class="subj-chip-name">Physics</span>
+        </div>
+        <div class="subj-chip sel" onclick="toggleSubj(this,'chemistry')">
+          <span class="subj-chip-icon">🧪</span>
+          <span class="subj-chip-name">Chemistry</span>
+        </div>
+        <div class="subj-chip" onclick="toggleSubj(this,'biology')">
+          <span class="subj-chip-icon">🧬</span>
+          <span class="subj-chip-name">Biology</span>
+        </div>
+      </div>
+      <div class="step-dots" id="dots2"></div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 4: GOAL ── -->
+  <div class="screen" id="screen-3">
+    <div class="screen-inner">
+      <div class="screen-emoji">⚡</div>
+      <div class="screen-heading">Daily problem goal?</div>
+      <div class="screen-sub">How many problems do you aim to solve each day? We'll remind you and track your streak.</div>
+      <div class="goal-section">
+        <div class="goal-display">
+          <span id="goalNum">10</span><span class="goal-unit"> problems</span>
+        </div>
+        <div class="goal-label-row">
+          <span>1</span><span>30</span>
+        </div>
+        <input type="range" class="s-slider" min="1" max="30" value="10" id="goalSlider" oninput="updateGoal(this.value)">
+        <div class="goal-desc" id="goalDesc">Solid daily target — most toppers do 8–15.</div>
+      </div>
+      <div class="step-dots" id="dots3"></div>
+    </div>
+  </div>
+
+  <!-- ── SCREEN 5: WELCOME ── -->
+  <div class="screen" id="screen-4">
+    <div class="screen-inner">
+      <div class="screen-emoji" id="welcomeEmoji">🚀</div>
+      <div class="welcome-name" id="welcomeName">You're all set.</div>
+      <div class="welcome-tagline" id="welcomeSub">Here's what PhiPrep has configured for you:</div>
+      <div class="summary-grid" id="summaryGrid">
+        <!-- Populated by JS -->
+      </div>
+      <div style="font-size:12px;color:var(--tlo);max-width:340px;text-align:center;line-height:1.6;">
+        Your weakness map starts building from your very first problem. Brain Mode is on by default — SOS is the escape hatch.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- BOTTOM NAV -->
+<div class="ob-bottom">
+  <div class="btn-back-mob hidden" id="backBtn" onclick="goBack()">←</div>
+  <button class="btn-next" id="nextBtn" onclick="goNext()">Continue →</button>
+</div>
+
+<script>
+const TOTAL = 5;
+let currentStep = 0;
+const data = { class:'', exam:'', year:'', subjects:['math','physics','chemistry'], goal:10 };
+
+/* ── Render dots on each screen ── */
+function renderDots() {
+  ['dots','dots1','dots2','dots3'].forEach((id, idx) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.innerHTML = '';
+    for(let i=0;i<4;i++){
+      const d=document.createElement('div');
+      d.className='dot'+(i===idx?' act':'');
+      el.appendChild(d);
+    }
+  });
+}
+renderDots();
+
+/* ── Progress ── */
+function updateProgress() {
+  const pct = (currentStep/(TOTAL-1))*100;
+  document.getElementById('progressFill').style.width = pct+'%';
+  const labels=['Step 1 of 4','Step 2 of 4','Step 3 of 4','Step 4 of 4','Almost done!'];
+  document.getElementById('stepLabel').textContent = labels[Math.min(currentStep,labels.length-1)];
+  document.getElementById('backBtn').classList.toggle('hidden', currentStep===0);
+  document.getElementById('skipBtn').style.display = currentStep>=4 ? 'none' : '';
+  const nxt = document.getElementById('nextBtn');
+  nxt.textContent = currentStep>=4 ? 'Start learning →' : 'Continue →';
+}
+
+/* ── Navigate ── */
+function goNext() {
+  if(currentStep===4){ window.location.href='phiprep-chat.html'; return; }
+  const cur = document.getElementById('screen-'+currentStep);
+  cur.classList.add('exit-left');
+  cur.classList.remove('active');
+  setTimeout(()=>cur.classList.remove('exit-left'),350);
+  currentStep++;
+  const next = document.getElementById('screen-'+currentStep);
+  next.style.transform='translateX(60px)'; next.style.opacity='0';
+  next.classList.add('active');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    next.style.transform=''; next.style.opacity='';
+  }));
+  if(currentStep===4) buildSummary();
+  updateProgress();
+}
+
+function goBack() {
+  if(currentStep===0) return;
+  const cur=document.getElementById('screen-'+currentStep);
+  cur.style.transition='opacity .25s ease, transform .25s cubic-bezier(.4,0,.2,1)';
+  cur.style.transform='translateX(60px)'; cur.style.opacity='0';
+  setTimeout(()=>{ cur.classList.remove('active'); cur.style.transform=''; cur.style.opacity=''; cur.style.transition=''; },250);
+  currentStep--;
+  const prev=document.getElementById('screen-'+currentStep);
+  prev.style.transform='translateX(-60px)'; prev.style.opacity='0';
+  prev.classList.add('active');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    prev.style.transform=''; prev.style.opacity='';
+  }));
+  updateProgress();
+}
+
+/* ── Option select (single-choice groups) ── */
+function selectOpt(el, group, val) {
+  data[group] = val;
+  el.closest('.opt-grid').querySelectorAll('.opt-card').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+/* ── Subject toggle ── */
+function toggleSubj(el, subj) {
+  el.classList.toggle('sel');
+  if(el.classList.contains('sel')){
+    if(!data.subjects.includes(subj)) data.subjects.push(subj);
+  } else {
+    data.subjects = data.subjects.filter(s=>s!==subj);
+  }
+}
+
+/* ── Goal slider ── */
+function updateGoal(v) {
+  data.goal = parseInt(v);
+  document.getElementById('goalNum').textContent = v;
+  const descs = {
+    1:'Just getting started — every problem counts.',
+    5:'Light warmup. Good for busy days.',
+    10:'Solid daily target — most toppers do 8–15.',
+    15:'Serious prep mode. You mean business.',
+    20:'Elite grind. Make sure to rest too.',
+    30:'Maximum mode — only if you can sustain it.'
+  };
+  const closest = [1,5,10,15,20,30].reduce((a,b)=>Math.abs(b-v)<Math.abs(a-v)?b:a);
+  document.getElementById('goalDesc').textContent = descs[closest] || descs[10];
+}
+
+/* ── Skip ── */
+function skipOnboarding() {
+  window.location.href='phiprep-chat.html';
+}
+
+/* ── Build summary ── */
+const examLabels = {
+  'jee-main':'JEE Main','jee-adv':'JEE Advanced','neet':'NEET','boards':'Board Exams','':"Not set"
+};
+const classLabels = {'11':'Class 11','12':'Class 12','dropper':'Dropper','':"Not set"};
+const subjNames = {'math':'Math','physics':'Physics','chemistry':'Chemistry','biology':'Biology'};
+
+function buildSummary() {
+  const grid = document.getElementById('summaryGrid');
+  const items = [
+    {lbl:'Class', val: classLabels[data.class]||'Not set'},
+    {lbl:'Target Exam', val: examLabels[data.exam]||'Not set'},
+    {lbl:'Target Year', val: data.year||'Not set'},
+    {lbl:'Daily Goal', val: data.goal+' problems / day'},
+    {lbl:'Subjects', val: data.subjects.map(s=>subjNames[s]||s).join(', ')||'Not set'},
+    {lbl:'Default Mode', val:'Brain Mode (Socratic)'},
+  ];
+  grid.innerHTML = items.map(i=>`
+    <div class="sum-card">
+      <div class="sum-lbl">${i.lbl}</div>
+      <div class="sum-val">${i.val}</div>
+    </div>
+  `).join('');
+}
+
+updateProgress();
+</script>
+</body>
+</html>

@@ -1,23 +1,21 @@
 """
 Ask Route — F1 (Problem Input) + F2 (Classification) + F3 (Brain Mode)
 
-POST /ask
-  - Accepts the problem (text or image)
-  - Runs classification (F2)
-  - Creates a ProblemAttempt record
-  - Returns Brain Mode guidance (F3) — the primary learning experience
-
-This is the main entry point. Every other feature (hints, SOS, step-check)
-operates on an attempt_id returned from this endpoint.
+POST /ask       — text/LaTeX problem → Brain Mode response
+POST /ask/image — image upload → OCR → Brain Mode response
+POST /ask/direct — text problem → SOS Mode direct solution
 """
 
 import base64
+import io
 import logging
 import uuid
 from datetime import datetime, timezone
 
 import httpx
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status, Request
+from PIL import Image  # FIX: replaced magic.from_buffer() with Pillow (already in requirements)
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import get_settings
@@ -27,10 +25,31 @@ from app.database.schemas import AskRequest, BrainModeResponse, ErrorResponse, D
 from app.services.reasoning_service import classify_problem, generate_brain_mode
 from app.services.solution_service import generate_sos_mode
 from app.utils.auth_middleware import get_current_user
+from app.utils.rate_limiter import limiter
 
 logger = logging.getLogger(__name__)
 settings = get_settings()
 router = APIRouter()
+
+
+# ---------------------------------------------------------------------------
+# Session ownership helper — FIX: prevents IDOR (cross-user session injection)
+# ---------------------------------------------------------------------------
+
+async def _validate_session_ownership(
+    session_id: uuid.UUID,
+    student_id: uuid.UUID,
+    db: AsyncSession,
+) -> None:
+    """Verify the chat session belongs to this student. Raises 403 if not."""
+    result = await db.execute(
+        select(ChatSession).where(ChatSession.id == session_id)
+    )
+    session = result.scalar_one_or_none()
+    if not session:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Chat session not found.")
+    if session.student_id != student_id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="You do not own this chat session.")
 
 
 # ---------------------------------------------------------------------------
@@ -44,21 +63,13 @@ router = APIRouter()
     summary="Submit a problem (text) — returns Brain Mode guidance",
     tags=["Brain Mode"],
 )
+@limiter.limit("10/minute")
 async def ask(
+    request: Request,
     body: AskRequest,
     current_user: Student = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> BrainModeResponse:
-    """
-    Primary endpoint. The student submits a problem in text/LaTeX form.
-
-    Returns Brain Mode output (F3):
-    - Pattern recognition
-    - Method selection with reasoning
-    - Setup instructions
-    - First step guidance
-    - Final answer is NEVER included
-    """
     return await _process_problem(
         problem=body.problem,
         student_id=current_user.id,
@@ -79,26 +90,40 @@ async def ask(
     summary="Submit a problem as an image — OCR then Brain Mode",
     tags=["Brain Mode"],
 )
+@limiter.limit("10/minute")
 async def ask_image(
+    request: Request,
     session_id: uuid.UUID | None = Form(None),
     image: UploadFile = File(..., description="Photo of the math problem"),
     current_user: Student = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> BrainModeResponse:
-    """
-    Image input path (F1). Uploads image → MathPix OCR → LaTeX string → Brain Mode.
-    Falls back gracefully if MathPix is not configured.
-    """
-    image_bytes = await image.read()
-
-    if len(image_bytes) > 5 * 1024 * 1024:  # 5 MB cap
+    # SEC-10 FIX: Check size BEFORE reading into memory
+    if image.size and image.size > 5 * 1024 * 1024:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail="Image must be under 5 MB.",
         )
 
-    # Validate image via magic bytes
-    mime_type = magic.from_buffer(image_bytes, mime=True)
+    image_bytes = await image.read()
+
+    if len(image_bytes) > 5 * 1024 * 1024:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail="Image must be under 5 MB.",
+        )
+
+    # FIX: use Pillow instead of magic.from_buffer() (magic was never imported)
+    try:
+        img = Image.open(io.BytesIO(image_bytes))
+        img.verify()
+        mime_type = Image.MIME.get(img.format, "application/octet-stream")
+    except Exception:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Invalid file format. Only images are accepted.",
+        )
+
     if not mime_type.startswith("image/"):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -124,7 +149,7 @@ async def ask_image(
 
 
 # ---------------------------------------------------------------------------
-# Shared processing pipeline
+# Direct SOS Mode
 # ---------------------------------------------------------------------------
 
 @router.post(
@@ -134,14 +159,13 @@ async def ask_image(
     summary="Submit a problem (text) — returns SOS Mode direct solution",
     tags=["SOS Mode"],
 )
+@limiter.limit("5/minute")
 async def ask_direct(
+    request: Request,
     body: DirectAskRequest,
     current_user: Student = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ) -> SOSModeResponse:
-    """
-    Direct SOS Mode. The student submits a problem and requests full solution instantly.
-    """
     try:
         classification = await classify_problem(body.problem)
     except Exception as exc:
@@ -167,6 +191,7 @@ async def ask_direct(
     )
     db.add(attempt)
     await db.flush()
+    await db.commit()
 
     try:
         response = await generate_sos_mode(
@@ -180,20 +205,35 @@ async def ask_direct(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="SOS Mode generation temporarily unavailable.",
         )
-        
+
     if body.session_id:
+        # FIX: validate session ownership before writing to it
+        await _validate_session_ownership(body.session_id, current_user.id, db)
+
         user_msg = ChatMessage(session_id=body.session_id, role="user", content=body.problem, mode="sos")
-        # Format a full response string
         responseText = []
         for step in response.solution_steps:
             responseText.append(f"**Step {step.step_number}:** {step.expression}\n_{step.explanation}_")
         responseText.append(f"**Final Answer:** {response.final_answer}")
-        
-        asst_msg = ChatMessage(session_id=body.session_id, role="assistant", content="\n\n".join(responseText), mode="sos")
+
+        asst_msg = ChatMessage(
+            session_id=body.session_id,
+            role="assistant",
+            content="\n\n".join(responseText),
+            mode="sos",
+        )
         db.add_all([user_msg, asst_msg])
+
+        # Update session updated_at so sidebar ordering is correct
+        sess_result = await db.execute(select(ChatSession).where(ChatSession.id == body.session_id))
+        chat_session = sess_result.scalar_one_or_none()
+        if chat_session:
+            chat_session.updated_at = datetime.now(timezone.utc)
+
         await db.commit()
 
     return response
+
 
 # ---------------------------------------------------------------------------
 # Shared processing pipeline
@@ -206,11 +246,6 @@ async def _process_problem(
     input_method: str,
     db: AsyncSession,
 ) -> BrainModeResponse:
-    """
-    Shared pipeline: classify → create attempt → generate Brain Mode.
-    All three steps happen here so the attempt is always created
-    before hint/SOS endpoints are called.
-    """
     try:
         classification = await classify_problem(problem)
     except Exception as exc:
@@ -220,7 +255,6 @@ async def _process_problem(
             detail="Classification service temporarily unavailable. Please try again.",
         )
 
-    # Create the attempt record
     attempt = ProblemAttempt(
         student_id=student_id,
         problem_text=problem,
@@ -234,7 +268,8 @@ async def _process_problem(
         started_at=datetime.now(timezone.utc),
     )
     db.add(attempt)
-    await db.flush()  # Gets the UUID without committing
+    await db.flush()
+    await db.commit()
 
     try:
         response = await generate_brain_mode(
@@ -248,26 +283,39 @@ async def _process_problem(
             status_code=status.HTTP_502_BAD_GATEWAY,
             detail="Brain Mode generation temporarily unavailable. Please try again.",
         )
-        
+
     if session_id:
-        user_msg = ChatMessage(session_id=session_id, role="user", content=problem, mode="brain")
-        
-        # Pedagogical labels: use more natural terms if it's a conceptual question
+        # FIX: validate session ownership before writing to it
+        await _validate_session_ownership(session_id, student_id, db)
+
         is_conceptual = "conceptual" in classification.pattern.lower() or "theory" in classification.pattern.lower()
-        
+
         p_label = "The Big Idea" if is_conceptual else "Pattern"
         m_label = "Core Principle" if is_conceptual else "Method"
         s_label = "Context" if is_conceptual else "Setup"
         f_label = "Next Step" if is_conceptual else "First Step"
 
+        user_msg = ChatMessage(session_id=session_id, role="user", content=problem, mode="brain")
         responseText = [
             f"**{p_label}:** {response.pattern}",
             f"**{m_label}:** {response.method}",
             f"**{s_label}:** {response.setup}",
             f"**{f_label}:** {response.first_step}",
         ]
-        asst_msg = ChatMessage(session_id=session_id, role="assistant", content="\n\n".join(responseText), mode="brain")
+        asst_msg = ChatMessage(
+            session_id=session_id,
+            role="assistant",
+            content="\n\n".join(responseText),
+            mode="brain",
+        )
         db.add_all([user_msg, asst_msg])
+
+        # Update session updated_at so sidebar ordering is correct
+        sess_result = await db.execute(select(ChatSession).where(ChatSession.id == session_id))
+        chat_session = sess_result.scalar_one_or_none()
+        if chat_session:
+            chat_session.updated_at = datetime.now(timezone.utc)
+
         await db.commit()
 
     return response
@@ -278,11 +326,6 @@ async def _process_problem(
 # ---------------------------------------------------------------------------
 
 async def _ocr_to_latex(image_bytes: bytes, content_type: str) -> str:
-    """
-    Call MathPix API to convert an image to LaTeX.
-    Returns the raw LaTeX string.
-    Raises on API error.
-    """
     if not settings.mathpix_app_id or not settings.mathpix_app_key:
         raise ValueError(
             "MathPix credentials not configured. "

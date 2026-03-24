@@ -1,6 +1,6 @@
 // React is auto-imported by the JSX transform
 
-export function CognifyLogo({ className = "w-10 h-10" }: { className?: string }) {
+export function PhyPrepLogo({ className = "w-10 h-10" }: { className?: string }) {
   return (
     <div className={`relative flex items-center justify-center ${className}`}>
       {/* Background pulsing glow */}

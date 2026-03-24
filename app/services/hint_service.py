@@ -149,6 +149,19 @@ async def get_hint(
         attempt.hints_used = requested_level
         await db.flush()
 
+        # BUG-08 FIX: Also increment WeaknessEntry.total_hints_used
+        if attempt.topic and attempt.subject:
+            from app.database.models import WeaknessEntry
+            we_result = await db.execute(
+                select(WeaknessEntry).where(
+                    WeaknessEntry.student_id == attempt.student_id,
+                    WeaknessEntry.topic == attempt.topic,
+                )
+            )
+            weakness = we_result.scalar_one_or_none()
+            if weakness:
+                weakness.total_hints_used = (weakness.total_hints_used or 0) + 1
+
         await cache_set(
             _hint_session_key(attempt_id),
             {"max_unlocked": requested_level},

@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhiPrep — Settings</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=DM+Mono:wght@400;500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:      #0a0a0a;
+  --s1:      #0f0f0f;
+  --s2:      #161616;
+  --s3:      #1e1e1e;
+  --s4:      #252525;
+  --s5:      #2e2e2e;
+  --s6:      #383838;
+  --thi:     #f0f0f0;
+  --tmd:     #a8a8a8;
+  --tlo:     #585858;
+  --tdm:     #303030;
+  --bdr:     rgba(255,255,255,0.08);
+  --bdrhi:   rgba(255,255,255,0.16);
+  --bdr2:    rgba(255,255,255,0.24);
+  --danger:  #d05040;
+  --dsoft:   rgba(208,80,64,0.10);
+  --warn:    #b89030;
+  --wsoft:   rgba(184,144,48,0.10);
+  --success: #4a8a50;
+  --ssoft:   rgba(74,138,80,0.12);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html, body { height:100%; }
+
+body {
+  background: var(--bg);
+  color: var(--thi);
+  font-family: 'Jost', sans-serif;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── NAV ── */
+nav {
+  height: 50px;
+  background: rgba(10,10,10,0.97);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--bdr);
+  display: flex; align-items: center;
+  padding: 0 20px; gap: 12px;
+  flex-shrink: 0; z-index: 10;
+  position: sticky; top: 0;
+}
+.nav-back {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--tlo);
+  background: none; border: 1px solid var(--bdr);
+  border-radius: 20px; padding: 5px 12px;
+  cursor: pointer; text-decoration: none;
+  font-family: 'Jost', sans-serif;
+  transition: all .2s;
+}
+.nav-back:hover { color: var(--thi); border-color: var(--bdrhi); }
+.nav-logo {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 20px; font-weight: 600;
+  color: var(--thi); letter-spacing: .03em;
+}
+.nav-logo em { color: var(--tmd); font-style: italic; }
+.nav-sp { flex: 1; }
+.nav-av {
+  width: 30px; height: 30px; border-radius: 50%;
+  background: var(--s4); border: 1px solid var(--bdrhi);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 700; color: var(--thi);
+}
+.save-btn {
+  background: var(--thi); color: var(--bg);
+  font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 700;
+  letter-spacing: .06em; padding: 7px 18px; border-radius: 8px;
+  border: none; cursor: pointer; transition: background .2s, transform .15s;
+  display: flex; align-items: center; gap: 6px;
+}
+.save-btn:hover { background: #e0e0e0; transform: translateY(-1px); }
+.save-btn.saved { background: var(--s3); color: var(--tmd); pointer-events: none; }
+
+/* ── LAYOUT ── */
+.layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 24px 20px 60px;
+  gap: 32px;
+  align-items: flex-start;
+}
+
+/* ── SIDEBAR NAV ── */
+.sidebar {
+  position: sticky; top: 56px;
+  display: flex; flex-direction: column;
+  padding: 0;
+  gap: 0;
+}
+.sb-section {
+  font-size: 9px; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--tdm);
+  padding: 32px 8px 10px;
+}
+/* First link has extra top margin so active icon never clips behind nav */
+.sb-section + .sb-link {
+  margin-top: 4px;
+}
+
+/* Row — fixed height so layout never shifts */
+.sb-link {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 44px;
+  padding: 0 4px;
+  border-radius: 12px;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  background: transparent;
+  transition: background .2s;
+  margin-bottom: 2px;
+  position: relative;
+  overflow: visible;
+  isolation: isolate;
+}
+.sb-link:hover { background: rgba(255,255,255,0.03); }
+
+/* Icon container — fixed 44×44 cell, icon scales inside */
+.sb-icon-wrap {
+  width: 44px; height: 44px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; position: relative;
+}
+
+/* Icon box — grows in place within the fixed cell */
+.sb-icon-box {
+  width: 30px; height: 30px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+  background: transparent;
+  border: 1px solid transparent;
+  transition:
+    width  .36s cubic-bezier(.4,0,.2,1),
+    height .36s cubic-bezier(.4,0,.2,1),
+    border-radius .36s ease,
+    font-size .36s cubic-bezier(.4,0,.2,1),
+    background .28s ease,
+    border-color .28s ease,
+    box-shadow .28s ease;
+}
+
+/* Label — left-aligned, steady position */
+.sb-label {
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--tlo);
+  margin-left: 8px;
+  white-space: nowrap;
+  transition: color .24s ease, font-weight .24s ease;
+  line-height: 1;
+}
+
+/* ── HOVER ── */
+.sb-link:hover .sb-icon-box {
+  width: 34px; height: 34px;
+  border-radius: 10px; font-size: 16px;
+  background: var(--s3); border-color: var(--bdr);
+}
+.sb-link:hover .sb-label { color: var(--tmd); }
+
+/* ── ACTIVE — icon expands, clean elevated panel, no blur ── */
+.sb-link.act .sb-icon-box {
+  width: 38px; height: 38px;
+  border-radius: 12px;
+  font-size: 19px;
+  background: var(--s4);
+  border-color: var(--bdrhi);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.06) inset,
+    0 4px 16px rgba(0,0,0,0.5);
+}
+.sb-link.act .sb-label {
+  color: var(--thi);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Non-active items shrink when something is active */
+.sidebar:has(.sb-link.act) .sb-link:not(.act) .sb-icon-box {
+  width: 26px; height: 26px;
+  font-size: 12px; border-radius: 7px;
+}
+.sidebar:has(.sb-link.act) .sb-link:not(.act) .sb-label {
+  color: var(--tdm);
+  font-size: 12px;
+}
+.sidebar:has(.sb-link.act) .sb-link:not(.act):hover .sb-icon-box {
+  width: 32px; height: 32px;
+  font-size: 15px; border-radius: 9px;
+  background: var(--s3); border-color: var(--bdr);
+}
+.sidebar:has(.sb-link.act) .sb-link:not(.act):hover .sb-label { color: var(--tmd); }
+
+/* Danger */
+.sb-danger .sb-label { color: rgba(208,80,64,0.5) !important; }
+.sb-danger:hover .sb-label { color: rgba(208,80,64,0.8) !important; }
+.sb-danger:hover .sb-icon-box {
+  background: var(--dsoft) !important;
+  border-color: rgba(208,80,64,.25) !important;
+}
+.sb-danger.act .sb-icon-box {
+  background: rgba(208,80,64,0.14) !important;
+  border-color: rgba(208,80,64,.32) !important;
+  box-shadow: 0 1px 0 rgba(255,100,80,0.08) inset, 0 6px 20px rgba(208,80,64,0.18) !important;
+}
+.sb-danger.act .sb-label { color: var(--danger) !important; }
+
+/* ── CONTENT AREA ── */
+.content { display: flex; flex-direction: column; gap: 10px; }
+
+/* ── SECTION BLOCK ── */
+.sblock {
+  background: var(--s1);
+  border: 1px solid var(--bdr);
+  border-radius: 16px;
+  overflow: hidden;
+  scroll-margin-top: 100px;
+}
+.sblock-hd {
+  display: flex; align-items: center; gap: 12px;
+  padding: 18px 22px 14px;
+  border-bottom: 1px solid var(--bdr);
+  border-radius: 16px 16px 0 0;
+}
+.sblock-icon {
+  width: 34px; height: 34px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  background: var(--s3); border: 1px solid var(--bdr);
+  flex-shrink: 0;
+}
+.sblock-title { font-size: 14px; font-weight: 600; color: var(--thi); }
+.sblock-sub   { font-size: 11px; color: var(--tlo); margin-top: 2px; }
+
+/* ── SETTING ROW ── */
+.srow {
+  display: flex; align-items: center; gap: 16px;
+  padding: 16px 22px;
+  border-bottom: 1px solid var(--bdr);
+  transition: background .15s;
+}
+.srow:last-child { border-bottom: none; }
+.srow:hover { background: rgba(255,255,255,0.015); }
+.srow-info { flex: 1; min-width: 0; }
+.srow-label {
+  font-size: 13px; font-weight: 500; color: var(--thi);
+  margin-bottom: 2px;
+}
+.srow-desc { font-size: 11.5px; color: var(--tlo); line-height: 1.5; }
+.srow-ctrl { flex-shrink: 0; }
+
+/* ── SELECT ── */
+.s-select {
+  background: var(--s3); border: 1px solid var(--bdr);
+  color: var(--thi); font-family: 'Jost', sans-serif;
+  font-size: 12.5px; padding: 8px 12px;
+  border-radius: 8px; cursor: pointer;
+  outline: none; min-width: 140px;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23585858' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 30px;
+  transition: border-color .2s;
+}
+.s-select:focus { border-color: var(--bdrhi); }
+.s-select option { background: var(--s3); }
+
+/* ── TOGGLE ── */
+.toggle-wrap { display: flex; align-items: center; gap: 8px; }
+.toggle {
+  position: relative; width: 40px; height: 22px;
+  display: inline-block;
+}
+.toggle input { opacity:0; width:0; height:0; }
+.toggle-track {
+  position: absolute; inset: 0;
+  background: var(--s5); border-radius: 11px;
+  border: 1px solid var(--bdr);
+  cursor: pointer; transition: background .25s, border-color .25s;
+}
+.toggle input:checked + .toggle-track { background: var(--thi); border-color: var(--bdrhi); }
+.toggle-track::after {
+  content: '';
+  position: absolute; top: 3px; left: 3px;
+  width: 14px; height: 14px; border-radius: 50%;
+  background: var(--tmd); transition: transform .25s, background .25s;
+}
+.toggle input:checked + .toggle-track::after { transform: translateX(18px); background: var(--bg); }
+.toggle-lbl { font-size: 12px; color: var(--tlo); }
+
+/* ── INPUT TEXT ── */
+.s-input {
+  background: var(--s3); border: 1px solid var(--bdr);
+  color: var(--thi); font-family: 'Jost', sans-serif;
+  font-size: 12.5px; padding: 8px 12px;
+  border-radius: 8px; outline: none; min-width: 200px;
+  transition: border-color .2s;
+}
+.s-input:focus { border-color: var(--bdrhi); }
+.s-input::placeholder { color: var(--tdm); }
+
+/* ── CHIP SELECTOR ── */
+.chip-group { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  font-size: 11.5px; font-weight: 500;
+  padding: 5px 12px; border-radius: 20px;
+  border: 1px solid var(--bdr); color: var(--tmd);
+  background: var(--s3); cursor: pointer;
+  transition: all .18s; user-select: none;
+}
+.chip:hover { border-color: var(--bdrhi); color: var(--thi); }
+.chip.on { background: var(--thi); color: var(--bg); border-color: var(--thi); }
+
+/* ── SLIDER ── */
+.slider-wrap { display: flex; align-items: center; gap: 10px; min-width: 200px; }
+.s-slider {
+  flex: 1; height: 4px; border-radius: 2px;
+  accent-color: var(--thi); cursor: pointer;
+  background: var(--s5);
+  -webkit-appearance: none; appearance: none;
+  outline: none;
+}
+.s-slider::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--thi); cursor: pointer;
+  border: 2px solid var(--bg);
+  box-shadow: 0 0 0 1px var(--bdrhi);
+}
+.s-slider::-moz-range-thumb {
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--thi); cursor: pointer;
+  border: 2px solid var(--bg);
+}
+.slider-val {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; color: var(--tmd);
+  min-width: 24px; text-align: right;
+}
+
+/* ── RADIO GROUP ── */
+.radio-group { display: flex; gap: 6px; }
+.radio-opt {
+  display: flex; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: 8px;
+  border: 1px solid var(--bdr); cursor: pointer;
+  transition: all .18s; user-select: none;
+}
+.radio-opt:hover { border-color: var(--bdrhi); }
+.radio-opt input { display: none; }
+.radio-opt .rdot {
+  width: 12px; height: 12px; border-radius: 50%;
+  border: 1.5px solid var(--tlo); flex-shrink: 0;
+  transition: all .18s;
+}
+.radio-opt:has(input:checked) { background: var(--s3); border-color: var(--bdrhi); }
+.radio-opt:has(input:checked) .rdot { background: var(--thi); border-color: var(--thi); }
+.radio-opt span { font-size: 12px; color: var(--tmd); }
+.radio-opt:has(input:checked) span { color: var(--thi); }
+
+/* ── DANGER ZONE ── */
+.danger-zone .sblock-hd { border-bottom-color: rgba(208,80,64,.18); }
+.danger-zone { border-color: rgba(208,80,64,.15); }
+.srow-danger { padding: 16px 22px; border-bottom: 1px solid rgba(208,80,64,.1); }
+.srow-danger:last-child { border-bottom: none; }
+.srow-danger:hover { background: rgba(208,80,64,0.04); }
+.srow-danger .srow-label { color: var(--danger); }
+
+.btn-danger {
+  background: var(--dsoft); color: var(--danger);
+  border: 1px solid rgba(208,80,64,.3);
+  font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 600;
+  padding: 8px 16px; border-radius: 8px;
+  cursor: pointer; transition: all .2s;
+  white-space: nowrap;
+}
+.btn-danger:hover { background: rgba(208,80,64,.2); border-color: rgba(208,80,64,.5); }
+
+.btn-outline {
+  background: transparent; color: var(--tmd);
+  border: 1px solid var(--bdr);
+  font-family: 'Jost', sans-serif; font-size: 12px; font-weight: 500;
+  padding: 8px 16px; border-radius: 8px;
+  cursor: pointer; transition: all .2s;
+  white-space: nowrap;
+}
+.btn-outline:hover { border-color: var(--bdrhi); color: var(--thi); }
+
+/* ── PROFILE AVATAR ── */
+.avatar-row {
+  display: flex; align-items: center; gap: 16px;
+  padding: 20px 22px 18px; border-bottom: 1px solid var(--bdr);
+}
+/* Ensure smooth inner top when it's directly under sblock border */
+.sblock > .avatar-row:first-child { border-radius: 16px 16px 0 0; }
+.avatar-circle {
+  width: 52px; height: 52px; border-radius: 50%;
+  background: var(--s4); border: 2px solid var(--bdrhi);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; font-weight: 700; color: var(--thi);
+  font-family: 'Cormorant Garamond', serif;
+  flex-shrink: 0; position: relative; cursor: pointer;
+}
+.avatar-edit {
+  position: absolute; bottom: -2px; right: -2px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--s5); border: 1.5px solid var(--bdrhi);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 8px;
+}
+.avatar-info { flex: 1; }
+.avatar-name { font-size: 15px; font-weight: 600; color: var(--thi); }
+.avatar-email { font-size: 12px; color: var(--tlo); margin-top: 2px; }
+.avatar-plan {
+  font-size: 10px; font-weight: 700; letter-spacing: .08em;
+  text-transform: uppercase; padding: 2px 9px; border-radius: 10px;
+  background: var(--s3); border: 1px solid var(--bdrhi); color: var(--tmd);
+  margin-top: 5px; display: inline-block;
+}
+
+/* ── PROGRESS BAR (daily goal) ── */
+.goal-wrap {
+  display: flex; flex-direction: column; gap: 8px; min-width: 200px;
+}
+.goal-row { display: flex; align-items: center; gap: 8px; }
+.goal-track { flex: 1; height: 4px; background: var(--s5); border-radius: 2px; overflow: hidden; }
+.goal-fill { height: 100%; background: var(--thi); border-radius: 2px; transition: width .5s ease; }
+.goal-count { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--tmd); }
+
+/* ── NOTIFICATION BADGE ── */
+.notif-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: .06em;
+  padding: 2px 7px; border-radius: 10px;
+  background: var(--wsoft); color: var(--warn);
+  border: 1px solid rgba(184,144,48,.25);
+}
+
+/* ── VERSION TAG ── */
+.version-strip {
+  text-align: center; padding: 20px;
+  font-size: 11px; color: var(--tdm);
+  font-family: 'DM Mono', monospace;
+}
+
+/* ── TOAST ── */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--s3); border: 1px solid var(--bdrhi);
+  color: var(--thi); font-size: 13px; font-weight: 500;
+  padding: 12px 22px; border-radius: 10px;
+  z-index: 999; transition: transform .3s cubic-bezier(.4,0,.2,1), opacity .3s;
+  opacity: 0; pointer-events: none; white-space: nowrap;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  display: flex; align-items: center; gap: 8px;
+}
+.toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+
+/* ── CONFIRM MODAL ── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7); backdrop-filter: blur(6px);
+  z-index: 500; opacity: 0; pointer-events: none;
+  transition: opacity .25s;
+  display: flex; align-items: center; justify-content: center;
+  padding: 20px;
+}
+.modal-overlay.show { opacity: 1; pointer-events: all; }
+.modal {
+  background: var(--s1); border: 1px solid var(--bdrhi);
+  border-radius: 18px; padding: 28px 28px 24px;
+  max-width: 380px; width: 100%;
+  transform: scale(.95); transition: transform .25s;
+}
+.modal-overlay.show .modal { transform: scale(1); }
+.modal-icon { font-size: 28px; margin-bottom: 14px; }
+.modal-title { font-size: 17px; font-weight: 600; color: var(--thi); margin-bottom: 8px; }
+.modal-text { font-size: 13px; color: var(--tmd); line-height: 1.6; margin-bottom: 22px; }
+.modal-btns { display: flex; gap: 10px; justify-content: flex-end; }
+.modal-cancel {
+  background: transparent; border: 1px solid var(--bdr);
+  color: var(--tmd); font-family: 'Jost', sans-serif;
+  font-size: 13px; padding: 9px 18px; border-radius: 8px; cursor: pointer;
+  transition: all .2s;
+}
+.modal-cancel:hover { border-color: var(--bdrhi); color: var(--thi); }
+.modal-confirm {
+  background: var(--danger); border: none; color: #fff;
+  font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600;
+  padding: 9px 18px; border-radius: 8px; cursor: pointer;
+  transition: all .2s;
+}
+.modal-confirm:hover { background: #c04030; }
+
+/* ── MOBILE NAV ── */
+.mob-section-nav {
+  display: none;
+  overflow-x: auto; gap: 6px; padding: 10px 16px;
+  border-bottom: 1px solid var(--bdr);
+  background: var(--s1);
+  scrollbar-width: none; flex-shrink: 0;
+}
+.mob-section-nav::-webkit-scrollbar { display: none; }
+.msn-btn {
+  font-family: 'Jost', sans-serif; font-size: 11px; font-weight: 600;
+  letter-spacing: .06em; padding: 6px 14px; border-radius: 20px;
+  border: 1px solid var(--bdr); white-space: nowrap;
+  background: transparent; color: var(--tlo); cursor: pointer;
+  transition: all .18s; flex-shrink: 0;
+}
+.msn-btn.act { background: var(--s3); color: var(--thi); border-color: var(--bdrhi); }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .sidebar { display: none; }
+  .mob-section-nav { display: flex; }
+  .layout { grid-template-columns: 1fr; padding: 16px 14px 80px; gap: 10px; }
+  nav { padding: 0 14px; }
+  .save-btn { padding: 6px 14px; font-size: 11px; }
+}
+@media (max-width: 480px) {
+  .srow { flex-direction: column; align-items: flex-start; gap: 10px; }
+  .srow-ctrl { width: 100%; }
+  .s-select { width: 100%; }
+  .s-input  { width: 100%; }
+  .chip-group { gap: 5px; }
+  .slider-wrap { width: 100%; }
+  .radio-group { flex-wrap: wrap; }
+  .goal-wrap { width: 100%; }
+  .sblock-hd { padding: 15px 16px 12px; }
+  .srow { padding: 14px 16px; }
+  .srow-danger { padding: 14px 16px; }
+  .avatar-row { padding: 14px 16px; }
+  .modal { padding: 22px 20px 18px; }
+}
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+.content > * { animation: fadeUp .35s ease both; }
+.content > *:nth-child(2){animation-delay:.04s}
+.content > *:nth-child(3){animation-delay:.08s}
+.content > *:nth-child(4){animation-delay:.12s}
+.content > *:nth-child(5){animation-delay:.16s}
+.content > *:nth-child(6){animation-delay:.20s}
+.content > *:nth-child(7){animation-delay:.24s}
+.content > *:nth-child(8){animation-delay:.28s}
+</style>
+</head>
+<body>
+
+<!-- Toast -->
+<div class="toast" id="toast">✓ Settings saved</div>
+
+<!-- Confirm Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <div class="modal-icon" id="modal-icon">⚠</div>
+    <div class="modal-title" id="modal-title">Are you sure?</div>
+    <div class="modal-text" id="modal-text">This action cannot be undone.</div>
+    <div class="modal-btns">
+      <button class="modal-cancel" onclick="closeModal()">Cancel</button>
+      <button class="modal-confirm" id="modal-confirm-btn">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="#" class="nav-back">← Back</a>
+  <span class="nav-logo" style="margin-left:4px">Phi<em>Prep</em></span>
+  <div class="nav-sp"></div>
+  <button class="save-btn" id="saveBtn" onclick="saveSettings()">Save changes</button>
+  <div class="nav-av">D</div>
+</nav>
+
+<!-- Mobile section nav -->
+<div class="mob-section-nav" id="mobSecNav">
+  <button class="msn-btn act" onclick="mobScroll('profile',this)">Profile</button>
+  <button class="msn-btn" onclick="mobScroll('learning',this)">Learning</button>
+  <button class="msn-btn" onclick="mobScroll('ai',this)">AI</button>
+  <button class="msn-btn" onclick="mobScroll('notifications',this)">Notifications</button>
+  <button class="msn-btn" onclick="mobScroll('practice',this)">Practice</button>
+  <button class="msn-btn" onclick="mobScroll('account',this)">Account</button>
+  <button class="msn-btn" onclick="mobScroll('editor',this)">Editor</button>
+  <button class="msn-btn" onclick="mobScroll('privacy',this)">Privacy</button>
+  <button class="msn-btn" onclick="mobScroll('danger',this)">Danger</button>
+</div>
+
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <nav class="sidebar">
+    <div class="sb-section">Settings</div>
+    <a class="sb-link act" href="#profile" onclick="setActive(this)">
+      <span class="sb-icon-wrap"><span class="sb-icon-box">👤</span></span>
+      <span class="sb-label">Profile</span>
+    </a>
+    <a class="sb-link" href="#learning" onclick="setActive(this)">
+      <span class="sb-icon-wrap"><span class="sb-icon-box">📚</span></span>
+      <span class="sb-label">Learning</span>
+    </a>
+    <a class="sb-link" href="#ai" onclick="setActive(this)">
+      <span class="sb-icon-wrap"><span class="sb-icon-box">🧠</span></span>
+      <span class="sb-label">AI Behavior</span>
+    </a>
+    <a class="sb-link" href="#notifications" onclick="setActive(this)">
+      <span class="sb-icon-wrap"><span class="sb-icon-box">🔔</span></span>
+      <span class="sb-label">Notifications</span>
+    </a>
+    <a class="sb-link" href="#practice" onclick="setActive(this)">
+      <span class="sb-icon-wrap"><span class="sb-icon-box">⚡</span></span>
+      <span class="sb-label">Practice</span>
+    </a>
+    <a class="sb-link" href="#account" onclick="setActive(this)">
+      <span class="sb-icon-wrap"><span class="sb-icon-box">🔐</span></span>
+      <span class="sb-label">Account</span>
+    </a>
+    <a class="sb-link" href="#editor" onclick="setActive(this)">
+      <span class="sb-icon-wrap"><span class="sb-icon-box">✏️</span></span>
+      <span class="sb-label">Editor</span>
+    </a>
+    <a class="sb-link" href="#privacy" onclick="setActive(this)">
+      <span class="sb-icon-wrap"><span class="sb-icon-box">🛡</span></span>
+      <span class="sb-label">Privacy</span>
+    </a>
+    <div class="sb-section" style="margin-top:8px">Danger zone</div>
+    <a class="sb-link sb-danger" href="#danger" onclick="setActive(this)">
+      <span class="sb-icon-wrap"><span class="sb-icon-box">⚠</span></span>
+      <span class="sb-label">Delete account</span>
+    </a>
+  </nav>
+
+  <!-- CONTENT -->
+  <div class="content">
+
+    <!-- ── PROFILE ── -->
+    <div class="sblock" id="profile">
+      <div class="sblock-hd">
+        <div class="sblock-icon">👤</div>
+        <div>
+          <div class="sblock-title">Profile</div>
+          <div class="sblock-sub">Your identity and exam details</div>
+        </div>
+      </div>
+
+      <!-- Avatar row -->
+      <div class="avatar-row">
+        <div class="avatar-circle">
+          D
+          <div class="avatar-edit">✎</div>
+        </div>
+        <div class="avatar-info">
+          <div class="avatar-name">Darsh</div>
+          <div class="avatar-email"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="a7c3c6d5d4cfe7c4c8c0c9cec1de89c6d7d7">[email&#160;protected]</a></div>
+          <div class="avatar-plan">Free Plan</div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Full name</div>
+          <div class="srow-desc">Shown on your profile and reports</div>
+        </div>
+        <div class="srow-ctrl">
+          <input class="s-input" type="text" placeholder="Your name" value="Darsh">
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Class</div>
+          <div class="srow-desc">Your current academic year</div>
+        </div>
+        <div class="srow-ctrl">
+          <select class="s-select">
+            <option>Class 11</option>
+            <option selected>Class 12</option>
+            <option>Dropper (12th pass)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Target exam</div>
+          <div class="srow-desc">PhiPrep tailors difficulty to your target</div>
+        </div>
+        <div class="srow-ctrl">
+          <select class="s-select">
+            <option>JEE Main</option>
+            <option selected>JEE Advanced</option>
+            <option>BITSAT</option>
+            <option>WBJEE</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Target year</div>
+          <div class="srow-desc">Countdown and exam-period mode activates automatically</div>
+        </div>
+        <div class="srow-ctrl">
+          <select class="s-select">
+            <option>2026</option>
+            <option selected>2027</option>
+            <option>2028</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Coaching / school</div>
+          <div class="srow-desc">Optional — helps us surface relevant examples</div>
+        </div>
+        <div class="srow-ctrl">
+          <input class="s-input" type="text" placeholder="e.g. Allen, FIITJEE, Self-study">
+        </div>
+      </div>
+    </div>
+
+    <!-- ── LEARNING PREFERENCES ── -->
+    <div class="sblock" id="learning">
+      <div class="sblock-hd">
+        <div class="sblock-icon">📚</div>
+        <div>
+          <div class="sblock-title">Learning Preferences</div>
+          <div class="sblock-sub">How you study, what you study</div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Default mode</div>
+          <div class="srow-desc">What activates when you submit a problem</div>
+        </div>
+        <div class="srow-ctrl">
+          <div class="radio-group">
+            <label class="radio-opt">
+              <input type="radio" name="mode" checked>
+              <div class="rdot"></div>
+              <span>Brain</span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="mode">
+              <div class="rdot"></div>
+              <span>SOS</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Subjects</div>
+          <div class="srow-desc">PhiPrep focuses on your selected subjects for practice and recommendations</div>
+        </div>
+        <div class="srow-ctrl">
+          <div class="chip-group">
+            <div class="chip on" onclick="toggleChip(this)">Mathematics</div>
+            <div class="chip on" onclick="toggleChip(this)">Physics</div>
+            <div class="chip on" onclick="toggleChip(this)">Chemistry</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Daily goal</div>
+          <div class="srow-desc">Number of problems you aim to solve each day</div>
+        </div>
+        <div class="srow-ctrl">
+          <div class="slider-wrap">
+            <input class="s-slider" type="range" min="1" max="30" value="10" id="goalSlider" oninput="document.getElementById('goalVal').textContent=this.value">
+            <span class="slider-val" id="goalVal">10</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Weak topic focus</div>
+          <div class="srow-desc">PhiPrep prioritises your weak topics in daily problem selection</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Difficulty progression</div>
+          <div class="srow-desc">Automatically increase difficulty as accuracy improves</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Study schedule</div>
+          <div class="srow-desc">When do you usually study? Helps with daily challenge timing</div>
+        </div>
+        <div class="srow-ctrl">
+          <select class="s-select">
+            <option>Morning (6am–12pm)</option>
+            <option selected>Afternoon (12pm–6pm)</option>
+            <option>Evening (6pm–10pm)</option>
+            <option>Night (10pm–2am)</option>
+            <option>No preference</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── AI BEHAVIOR ── -->
+    <div class="sblock" id="ai">
+      <div class="sblock-hd">
+        <div class="sblock-icon">🧠</div>
+        <div>
+          <div class="sblock-title">AI Behavior</div>
+          <div class="sblock-sub">How PhiPrep thinks and explains</div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Language</div>
+          <div class="srow-desc">Language used for explanations and hints</div>
+        </div>
+        <div class="srow-ctrl">
+          <select class="s-select">
+            <option selected>English</option>
+            <option>Hinglish</option>
+            <option>Hindi</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Detail level</div>
+          <div class="srow-desc">How much context and reasoning the AI provides</div>
+        </div>
+        <div class="srow-ctrl">
+          <div class="radio-group">
+            <label class="radio-opt">
+              <input type="radio" name="detail">
+              <div class="rdot"></div>
+              <span>Concise</span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="detail" checked>
+              <div class="rdot"></div>
+              <span>Balanced</span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="detail">
+              <div class="rdot"></div>
+              <span>Detailed</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Show steps</div>
+          <div class="srow-desc">Display numbered reasoning steps in Brain Mode output</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Show ILATE / method name</div>
+          <div class="srow-desc">Label the method used (e.g. IBP, substitution) in Brain Mode</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Show prerequisite concepts</div>
+          <div class="srow-desc">Surface the concept dependency before Brain Mode output</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox">
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Motivational tone</div>
+          <div class="srow-desc">AI adds encouragement and context to responses</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── NOTIFICATIONS ── -->
+    <div class="sblock" id="notifications">
+      <div class="sblock-hd">
+        <div class="sblock-icon">🔔</div>
+        <div>
+          <div class="sblock-title">Notifications</div>
+          <div class="sblock-sub">What PhiPrep sends you and when</div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Daily challenge reminder</div>
+          <div class="srow-desc">Get nudged when your daily challenge is waiting</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Streak reminder</div>
+          <div class="srow-desc">Alert before your streak breaks — 2 hours warning</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Weakness regression alert</div>
+          <div class="srow-desc">Notify when a strong topic starts slipping</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Inactivity nudge</div>
+          <div class="srow-desc">Remind after 2 days of no practice</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox">
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Weekly report</div>
+          <div class="srow-desc">Summary of your accuracy, streak and weak topics every Sunday</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PRACTICE ── -->
+    <div class="sblock" id="practice">
+      <div class="sblock-hd">
+        <div class="sblock-icon">⚡</div>
+        <div>
+          <div class="sblock-title">Practice</div>
+          <div class="sblock-sub">Session and attempt behaviour</div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Auto hint</div>
+          <div class="srow-desc">Automatically offer Hint 1 after 5 minutes of no activity on a problem</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox">
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Hint delay</div>
+          <div class="srow-desc">Minutes before auto hint triggers (if enabled)</div>
+        </div>
+        <div class="srow-ctrl">
+          <div class="slider-wrap">
+            <input class="s-slider" type="range" min="1" max="20" value="5" id="hintSlider" oninput="document.getElementById('hintVal').textContent=this.value+'m'">
+            <span class="slider-val" id="hintVal">5m</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">SOS friction</div>
+          <div class="srow-desc">Require a confirmation tap before showing the full solution</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Step-by-step verification</div>
+          <div class="srow-desc">Check each line of working before moving to the next</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Post-SOS practice prompt</div>
+          <div class="srow-desc">After SOS, suggest a similar problem in Brain Mode</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Session timer</div>
+          <div class="srow-desc">Track time spent per problem — feeds speed analytics</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ACCOUNT ── -->
+    <div class="sblock" id="account">
+      <div class="sblock-hd">
+        <div class="sblock-icon">🔐</div>
+        <div>
+          <div class="sblock-title">Account</div>
+          <div class="sblock-sub">Security and subscription</div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Email address</div>
+          <div class="srow-desc">Used for login and notifications</div>
+        </div>
+        <div class="srow-ctrl">
+          <input class="s-input" type="email" value="darsh@phiprep.app">
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Change password</div>
+          <div class="srow-desc">Last changed: never (Google login)</div>
+        </div>
+        <div class="srow-ctrl">
+          <button class="btn-outline" onclick="showToast('Password reset email sent ✓')">Send reset email</button>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Current plan</div>
+          <div class="srow-desc">Free — 5 X-Rays per day, basic tracking</div>
+        </div>
+        <div class="srow-ctrl">
+          <button class="btn-outline" style="border-color:var(--bdrhi);color:var(--thi)" onclick="showToast('Redirecting to upgrade page…')">Upgrade to Pro →</button>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Two-factor authentication</div>
+          <div class="srow-desc">Extra security for your account</div>
+        </div>
+        <div class="srow-ctrl" style="display:flex;align-items:center;gap:10px">
+          <label class="toggle">
+            <input type="checkbox">
+            <div class="toggle-track"></div>
+          </label>
+          <span class="notif-badge">Recommended</span>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Active sessions</div>
+          <div class="srow-desc">1 device currently signed in</div>
+        </div>
+        <div class="srow-ctrl">
+          <button class="btn-outline" onclick="showToast('Signed out of all other devices')">Sign out all</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── EDITOR ── -->
+    <div class="sblock" id="editor">
+      <div class="sblock-hd">
+        <div class="sblock-icon">✏️</div>
+        <div>
+          <div class="sblock-title">Editor</div>
+          <div class="sblock-sub">Chat appearance and input behaviour</div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Chat font size</div>
+          <div class="srow-desc">Text size in chat bubbles, Brain Mode cards and hints</div>
+        </div>
+        <div class="srow-ctrl">
+          <div class="slider-wrap">
+            <input class="s-slider" type="range" min="11" max="18" value="13" id="fontSlider"
+              oninput="document.getElementById('fontVal').textContent=this.value+'px'">
+            <span class="slider-val" id="fontVal">13px</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Font style</div>
+          <div class="srow-desc">Typeface used in the chat input and message bubbles</div>
+        </div>
+        <div class="srow-ctrl">
+          <select class="s-select">
+            <option selected>Jost (default)</option>
+            <option>DM Mono</option>
+            <option>Serif (Cormorant)</option>
+            <option>System default</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Message bubble density</div>
+          <div class="srow-desc">Spacing between chat messages</div>
+        </div>
+        <div class="srow-ctrl">
+          <div class="radio-group">
+            <label class="radio-opt">
+              <input type="radio" name="density">
+              <div class="rdot"></div>
+              <span>Compact</span>
+            </label>
+            <label class="radio-opt">
+              <input type="radio" name="density" checked>
+              <div class="rdot"></div>
+              <span>Comfortable</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Math rendering</div>
+          <div class="srow-desc">How LaTeX and math expressions are displayed in chat</div>
+        </div>
+        <div class="srow-ctrl">
+          <select class="s-select">
+            <option selected>Rendered (pretty)</option>
+            <option>Raw LaTeX</option>
+            <option>Plain text</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Send on Enter</div>
+          <div class="srow-desc">Press Enter to send — Shift+Enter for new line</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Spell check</div>
+          <div class="srow-desc">Browser spell check in the chat input field</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox">
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Input toolbar</div>
+          <div class="srow-desc">Show image upload and LaTeX buttons in the input bar</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Show timestamps</div>
+          <div class="srow-desc">Display time on each message bubble</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox">
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Animate Brain Mode steps</div>
+          <div class="srow-desc">Steps in Brain Mode appear one by one with a fade-in</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Typing indicator</div>
+          <div class="srow-desc">Show animated dots while AI is generating a response</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+
+    <!-- ── PRIVACY ── -->
+    <div class="sblock" id="privacy">
+      <div class="sblock-hd">
+        <div class="sblock-icon">🛡</div>
+        <div>
+          <div class="sblock-title">Privacy</div>
+          <div class="sblock-sub">Your data, your control</div>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Allow analytics</div>
+          <div class="srow-desc">Help us improve PhiPrep by sharing anonymous usage data</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">AI model training opt-out</div>
+          <div class="srow-desc">Your data will NOT be used to train AI models (as per DPDP Act)</div>
+        </div>
+        <div class="srow-ctrl">
+          <label class="toggle">
+            <input type="checkbox" checked>
+            <div class="toggle-track"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Delete history</div>
+          <div class="srow-desc">Permanently erase all your past sessions and chat history</div>
+        </div>
+        <div class="srow-ctrl">
+          <button class="btn-danger" onclick="openModal('🗑','Delete all history?','This will permanently erase all your sessions, chat history and problem attempts. Your weakness map and progress will reset. This cannot be undone.','Delete history')">Delete history</button>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Export data</div>
+          <div class="srow-desc">Download all your data as a JSON file (DPDP Act compliant)</div>
+        </div>
+        <div class="srow-ctrl">
+          <button class="btn-outline" onclick="showToast('Export started — check your email in a few minutes')">Export my data</button>
+        </div>
+      </div>
+
+      <div class="srow">
+        <div class="srow-info">
+          <div class="srow-label">Privacy policy</div>
+          <div class="srow-desc">Read how we handle your data</div>
+        </div>
+        <div class="srow-ctrl">
+          <button class="btn-outline">Read policy →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── DANGER ZONE ── -->
+    <div class="sblock danger-zone" id="danger">
+      <div class="sblock-hd">
+        <div class="sblock-icon" style="background:var(--dsoft);border-color:rgba(208,80,64,.3)">⚠</div>
+        <div>
+          <div class="sblock-title" style="color:var(--danger)">Danger zone</div>
+          <div class="sblock-sub">Irreversible actions — read carefully</div>
+        </div>
+      </div>
+
+      <div class="srow srow-danger">
+        <div class="srow-info">
+          <div class="srow-label">Delete account</div>
+          <div class="srow-desc" style="color:var(--tlo)">Permanently delete your account, all data, sessions, and progress. This cannot be undone and takes effect immediately.</div>
+        </div>
+        <div class="srow-ctrl">
+          <button class="btn-danger" onclick="openModal('💀','Delete your account?','This will permanently delete your PhiPrep account, all session history, weakness data, streak, and progress. You will be signed out immediately. This action is irreversible.','Delete my account')">Delete account</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="version-strip">
+      PhiPrep · v1.0.0-MVP · Built for JEE 2026
+    </div>
+
+  </div>
+</div>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+/* ── Sidebar active ── */
+function setActive(el) {
+  document.querySelectorAll('.sb-link').forEach(l => l.classList.remove('act'));
+  el.classList.add('act');
+}
+
+/* ── Scroll spy re-targeting sb-link ── */
+
+/* ── Chip toggle ── */
+function toggleChip(el) { el.classList.toggle('on'); markDirty(); }
+
+/* ── Dirty state (unsaved changes) ── */
+let dirty = false;
+function markDirty() {
+  dirty = true;
+  const btn = document.getElementById('saveBtn');
+  btn.classList.remove('saved');
+  btn.textContent = 'Save changes';
+}
+
+document.querySelectorAll('input, select').forEach(el => {
+  el.addEventListener('change', markDirty);
+});
+
+/* ── Save ── */
+function saveSettings() {
+  const btn = document.getElementById('saveBtn');
+  btn.textContent = 'Saving…';
+  setTimeout(() => {
+    btn.classList.add('saved');
+    btn.textContent = '✓ Saved';
+    dirty = false;
+    showToast('✓ All settings saved');
+    setTimeout(() => {
+      btn.classList.remove('saved');
+      btn.textContent = 'Save changes';
+    }, 3000);
+  }, 600);
+}
+
+/* ── Toast ── */
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+/* ── Modal ── */
+let modalCallback = null;
+function openModal(icon, title, text, btnLabel) {
+  document.getElementById('modal-icon').textContent = icon;
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-text').textContent = text;
+  document.getElementById('modal-confirm-btn').textContent = btnLabel;
+  document.getElementById('modal').classList.add('show');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('show');
+}
+document.getElementById('modal-confirm-btn').addEventListener('click', () => {
+  closeModal();
+  showToast('Action completed');
+});
+document.getElementById('modal').addEventListener('click', e => {
+  if (e.target === document.getElementById('modal')) closeModal();
+});
+
+/* ── Sidebar scroll spy ── */
+const sections = document.querySelectorAll('.sblock');
+const sbLinks  = document.querySelectorAll('.sb-link');
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      sbLinks.forEach(l => l.classList.remove('act'));
+      const match = document.querySelector('.sb-link[href="#' + e.target.id + '"]');
+      if (match) match.classList.add('act');
+    }
+  });
+}, { threshold: 0.4, rootMargin: '-80px 0px -60% 0px' });
+sections.forEach(s => observer.observe(s));
+
+/* ── Mobile section nav scroll ── */
+function mobScroll(id, btn

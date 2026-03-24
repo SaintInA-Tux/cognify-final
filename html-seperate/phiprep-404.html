@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhiPrep — 404</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=DM+Mono:wght@400;500&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0a;--s1:#0f0f0f;--s2:#161616;--s3:#1e1e1e;--s4:#252525;--s5:#2e2e2e;
+  --thi:#f0f0f0;--tmd:#a8a8a8;--tlo:#585858;--tdm:#2e2e2e;
+  --bdr:rgba(255,255,255,0.08);--bdrhi:rgba(255,255,255,0.16);--bdr2:rgba(255,255,255,0.24);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  background:var(--bg);color:var(--thi);
+  font-family:'Jost',sans-serif;
+  display:flex;flex-direction:column;
+  min-height:100vh;
+  overflow:hidden;
+  cursor:none;
+}
+
+/* ── CURSOR ── */
+.cursor{width:7px;height:7px;background:#fff;border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);mix-blend-mode:screen;transition:width .15s,height .15s;}
+.cursor-ring{width:28px;height:28px;border:1px solid rgba(255,255,255,.2);border-radius:50%;position:fixed;top:0;left:0;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);}
+
+/* ── GRID BG ── */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+  background-size:48px 48px;
+  pointer-events:none;
+}
+body::after{
+  content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 70% at 50% 50%,transparent 0%,var(--bg) 100%);
+  pointer-events:none;
+}
+
+/* ── NAV ── */
+nav{position:relative;z-index:2;height:50px;display:flex;align-items:center;padding:0 24px;border-bottom:1px solid var(--bdr);}
+.nav-logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--thi);letter-spacing:.03em;text-decoration:none;display:flex;align-items:center;gap:8px;}
+.nav-logo-mark{width:26px;height:26px;border-radius:7px;background:var(--thi);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--bg);font-family:'Cormorant Garamond',serif;font-weight:600;}
+.nav-logo em{color:var(--tmd);font-style:italic;}
+
+/* ── MAIN ── */
+.main{
+  flex:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+  padding:40px 24px;
+  position:relative;z-index:1;
+  text-align:center;
+}
+
+/* ── BIG 404 ── */
+.four-wrap{position:relative;margin-bottom:8px;user-select:none;}
+.big-404 {
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(100px,20vw,180px);
+  font-weight:600;
+  color:transparent;
+  -webkit-text-stroke:1px rgba(255,255,255,.12);
+  line-height:1;
+  letter-spacing:-.02em;
+  position:relative;
+}
+/* Φ in the zero */
+.zero-phi{
+  position:absolute;
+  top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(40px,8vw,72px);
+  font-weight:600;
+  color:rgba(255,255,255,.18);
+  pointer-events:none;
+}
+
+/* ── ERROR CARD ── */
+.error-card{
+  background:var(--s1);border:1px solid var(--bdrhi);
+  border-radius:18px;padding:28px 32px;
+  max-width:460px;width:100%;
+  position:relative;overflow:hidden;
+  margin-bottom:24px;
+}
+.error-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1.5px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);}
+
+.error-tag{
+  font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--tlo);margin-bottom:14px;
+  display:flex;align-items:center;gap:6px;
+}
+.error-tag::before{content:'';width:4px;height:4px;border-radius:50%;background:var(--tlo);}
+
+.error-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:26px;font-weight:600;color:var(--thi);
+  margin-bottom:10px;line-height:1.2;
+}
+.error-sub{font-size:13.5px;color:var(--tlo);line-height:1.65;margin-bottom:20px;}
+
+/* ── BRAIN MODE JOKE ── */
+.brain-card{
+  background:var(--bg);border:1px solid var(--bdrhi);
+  border-radius:11px;padding:14px 16px;
+  margin-bottom:20px;position:relative;overflow:hidden;
+  text-align:left;
+}
+.brain-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.15),transparent);opacity:.5;}
+.bc-lbl{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tmd);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.bc-lbl::after{content:'';flex:1;height:1px;background:var(--bdr);}
+.bc-step{display:flex;gap:9px;margin-bottom:6px;align-items:flex-start;}
+.bc-step:last-child{margin-bottom:0;}
+.bc-num{font-family:'DM Mono',monospace;font-size:8.5px;color:var(--tdm);min-width:16px;padding-top:3px;flex-shrink:0;}
+.bc-text{font-size:12px;color:var(--tmd);line-height:1.55;}
+.bc-text b{color:var(--thi);font-weight:500;}
+.bc-withheld{text-align:center;font-size:10px;font-style:italic;color:var(--tdm);margin-top:10px;padding-top:8px;border-top:1px dashed var(--bdr);}
+
+/* ── ACTIONS ── */
+.actions{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;}
+.btn-home{padding:11px 24px;background:var(--thi);color:var(--bg);border:none;border-radius:10px;font-family:'Jost',sans-serif;font-size:13px;font-weight:700;cursor:none;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:7px;}
+.btn-home:hover{background:#e0e0e0;transform:translateY(-1px);}
+.btn-back{padding:11px 24px;background:transparent;color:var(--tmd);border:1px solid var(--bdr);border-radius:10px;font-family:'Jost',sans-serif;font-size:13px;cursor:none;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:7px;}
+.btn-back:hover{border-color:var(--bdrhi);color:var(--thi);}
+
+/* ── FLOATING MATH ── */
+.math-float{
+  position:fixed;
+  font-family:'DM Mono',monospace;
+  font-size:13px;color:rgba(255,255,255,.04);
+  pointer-events:none;z-index:0;
+  animation:floatDrift var(--dur,12s) ease-in-out infinite alternate;
+}
+@keyframes floatDrift{from{transform:translateY(0) rotate(var(--rot,0deg))}to{transform:translateY(-20px) rotate(var(--rot2,5deg))}}
+
+/* ── ERROR CODE TERMINAL ── */
+.terminal{
+  background:var(--s2);border:1px solid var(--bdr);border-radius:8px;padding:10px 14px;margin-top:12px;text-align:left;
+}
+.term-line{font-family:'DM Mono',monospace;font-size:10.5px;color:var(--tlo);line-height:1.7;}
+.term-line .t-red{color:#d07060;}
+.term-line .t-yel{color:#a08030;}
+.term-line .t-grn{color:#5a9050;}
+.term-line .t-dim{color:var(--tdm);}
+.cursor-blink{display:inline-block;width:7px;height:12px;background:var(--tlo);margin-left:2px;animation:blink .8s step-end infinite;vertical-align:middle;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+@media(max-width:600px){
+  .error-card{padding:22px 20px; max-width:100%;}
+  .actions{flex-direction:column;align-items:center;width:100%;max-width:320px;}
+  .btn-home,.btn-back{width:100%;justify-content:center;}
+  .main{padding:24px 16px;}
+}
+@media(max-width:480px){
+  .big-404{font-size:clamp(72px,20vw,110px);}
+  body{cursor:auto;}
+  .cursor,.cursor-ring{display:none;}
+  .error-title{font-size:22px;}
+  .error-sub{font-size:12.5px;}
+  .bc-text{font-size:11.5px;}
+  .term-line{font-size:10px;}
+  nav{padding:0 16px;}
+  /* hide some floating math on small screens */
+  .math-float:nth-child(n+5){display:none;}
+}
+@media(max-width:380px){
+  .big-404{font-size:68px;}
+  .error-card{padding:18px 16px;border-radius:14px;}
+}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="ring"></div>
+
+<!-- Floating math background -->
+<div class="math-float" style="top:8%;left:6%;--dur:14s;--rot:-5deg;--rot2:3deg">∫ eˣ dx</div>
+<div class="math-float" style="top:15%;right:8%;--dur:16s;--rot:3deg;--rot2:-4deg">lim x→∞</div>
+<div class="math-float" style="top:60%;left:4%;--dur:11s;--rot:8deg;--rot2:-2deg">d/dx(sin x)</div>
+<div class="math-float" style="bottom:20%;right:6%;--dur:13s;--rot:-3deg;--rot2:6deg">∑n²</div>
+<div class="math-float" style="top:40%;left:2%;--dur:18s">ILATE</div>
+<div class="math-float" style="bottom:30%;right:12%;--dur:15s;--rot:4deg">f'(x)=0</div>
+<div class="math-float" style="top:75%;left:15%;--dur:12s;--rot:-6deg">det(A)</div>
+
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-mark">Φ</div>
+    Phi<em>Prep</em>
+  </a>
+</nav>
+
+<div class="main">
+
+  <div class="four-wrap">
+    <div class="big-404">4<span style="position:relative;">0<span class="zero-phi">Φ</span></span>4</div>
+  </div>
+
+  <div class="error-card">
+    <div class="error-tag">Error 404 — Page not found</div>
+    <div class="error-title">This page doesn't exist.<br>Unlike your potential.</div>
+    <div class="error-sub">
+      You've wandered off the syllabus. Even JEE doesn't test this chapter.
+    </div>
+
+    <!-- Brain Mode applied to 404 -->
+    <div class="brain-card">
+      <div class="bc-lbl">Brain Mode — 404 Analysis</div>
+      <div class="bc-step"><span class="bc-num">01</span><span class="bc-text"><b>Pattern:</b> URL typed incorrectly, or link is broken — classic "human error" pattern.</span></div>
+      <div class="bc-step"><span class="bc-num">02</span><span class="bc-text"><b>Method:</b> Navigate back to a known state. Don't SOS — this one actually doesn't have a solution page.</span></div>
+      <div class="bc-step"><span class="bc-num">03</span><span class="bc-text"><b>First move:</b> Click the button below. It's easier than L'Hôpital.</span></div>
+      <div class="bc-withheld">The correct URL is withheld — just go home ↓</div>
+    </div>
+
+    <div class="terminal">
+      <div class="term-line"><span class="t-dim">$ </span><span class="t-red">GET</span> <span class="t-yel">/this-page-doesnt-exist</span></div>
+      <div class="term-line"><span class="t-dim">→ </span><span class="t-red">404</span> <span class="t-dim">Not Found</span></div>
+      <div class="term-line"><span class="t-dim">→ </span><span class="t-grn">Suggestion:</span> <span class="t-dim">try /chat or /dashboard</span><span class="cursor-blink"></span></div>
+    </div>
+  </div>
+
+  <div class="actions">
+    <a href="#" class="btn-home">Φ Go home →</a>
+    <a href="javascript:history.back()" class="btn-back">← Go back</a>
+  </div>
+
+</div>
+
+<script>
+const cur=document.getElementById('cursor'),ring=document.getElementById('ring');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;});
+(function anim(){
+  cur.style.left=mx+'px'; cur.style.top=my+'px';
+  rx+=(mx-rx)*.1; ry+=(my-ry)*.1;
+  ring.style.left=rx+'px'; ring.style.top=ry+'px';
+  requestAnimationFrame(anim);
+})();
+</script>
+</body>
+</html>

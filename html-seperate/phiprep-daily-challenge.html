@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhiPrep — Daily Challenge</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,400&family=DM+Mono:wght@400;500&family=Jost:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0a;--s1:#0f0f0f;--s2:#161616;--s3:#1e1e1e;--s4:#252525;--s5:#2e2e2e;--s6:#383838;
+  --thi:#f0f0f0;--tmd:#a8a8a8;--tlo:#585858;--tdm:#303030;
+  --bdr:rgba(255,255,255,0.08);--bdrhi:rgba(255,255,255,0.16);--bdr2:rgba(255,255,255,0.24);
+  --danger:#d05040;--dsoft:rgba(208,80,64,0.12);
+  --gold:#c8a040;--goldsf:rgba(200,160,64,0.12);
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--thi);font-family:'Jost',sans-serif;display:flex;flex-direction:column;height:100vh;}
+
+/* NAV */
+nav{height:50px;background:rgba(10,10,10,.97);border-bottom:1px solid var(--bdr);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;z-index:10;}
+.nav-logo{font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--thi);letter-spacing:.03em;text-decoration:none;display:flex;align-items:center;gap:8px;}
+.nav-logo-mark{width:26px;height:26px;border-radius:7px;background:var(--thi);display:flex;align-items:center;justify-content:center;font-size:14px;color:var(--bg);font-family:'Cormorant Garamond',serif;font-weight:600;}
+.nav-logo em{color:var(--tmd);font-style:italic;}
+.nav-sp{flex:1;}
+.nav-btn{background:none;border:1px solid var(--bdr);color:var(--tlo);font-family:'Jost',sans-serif;font-size:11.5px;padding:5px 12px;border-radius:20px;cursor:pointer;transition:all .2s;}
+.nav-btn:hover{color:var(--thi);border-color:var(--bdrhi);}
+.nav-av{width:30px;height:30px;border-radius:50%;background:var(--s4);border:1px solid var(--bdrhi);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--thi);}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--bdr) transparent;}
+.main::-webkit-scrollbar{width:4px;}
+.main::-webkit-scrollbar-thumb{background:var(--s5);border-radius:4px;}
+
+.container{max-width:760px;margin:0 auto;padding:28px 20px 60px;}
+
+/* HEADER */
+.dc-header{
+  display:flex;align-items:flex-start;justify-content:space-between;
+  margin-bottom:24px;gap:20px;
+}
+.dc-title-group{}
+.dc-label{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--tlo);margin-bottom:6px;}
+.dc-title{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:600;color:var(--thi);line-height:1.1;}
+.dc-date{font-size:12px;color:var(--tdm);margin-top:5px;font-family:'DM Mono',monospace;}
+
+/* STREAK */
+.streak-card{
+  background:var(--goldsf);border:1px solid rgba(200,160,64,.22);
+  border-radius:14px;padding:14px 16px;
+  display:flex;align-items:center;gap:12px;
+  flex-shrink:0;
+}
+.streak-flames{display:flex;gap:2px;font-size:18px;}
+.streak-info{}
+.streak-num{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:var(--gold);line-height:1;}
+.streak-lbl{font-size:10px;color:var(--tlo);margin-top:2px;}
+
+/* STATS ROW */
+.stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.stat-mini{background:var(--s1);border:1px solid var(--bdr);border-radius:12px;padding:14px 16px;}
+.sm-val{font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--thi);}
+.sm-lbl{font-size:10px;color:var(--tlo);margin-top:3px;}
+.sm-delta{font-size:10px;margin-top:2px;}
+.sm-delta.up{color:#6ab870;}
+.sm-delta.dn{color:var(--danger);}
+
+/* PROBLEM CARD */
+.problem-card{
+  background:var(--s1);border:1px solid var(--bdrhi);
+  border-radius:16px;overflow:hidden;margin-bottom:16px;
+  position:relative;
+  animation:fadeUp .4s ease both;
+}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+.problem-card::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:1.5px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);
+}
+.pc-head{
+  display:flex;align-items:center;gap:10px;
+  padding:16px 20px;border-bottom:1px solid var(--bdr);
+}
+.pc-tag{font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:3px 9px;border-radius:20px;}
+.pc-tag.hard{background:rgba(208,80,64,.14);color:#d07060;border:1px solid rgba(208,80,64,.22);}
+.pc-tag.topic{background:var(--s3);color:var(--tmd);border:1px solid var(--bdr);}
+.pc-sp{flex:1;}
+
+/* TIMER */
+.timer-wrap{display:flex;align-items:center;gap:6px;}
+.timer{font-family:'DM Mono',monospace;font-size:16px;font-weight:500;color:var(--thi);}
+.timer.warn{color:var(--danger);}
+.timer-icon{font-size:13px;}
+
+.pc-body{padding:24px 24px 20px;}
+.problem-text{
+  font-family:'Cormorant Garamond',serif;
+  font-size:18px;color:var(--thi);line-height:1.65;
+  margin-bottom:20px;
+}
+.problem-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px;}
+.p-opt{
+  background:var(--s2);border:1px solid var(--bdr);
+  border-radius:10px;padding:11px 14px;
+  display:flex;align-items:center;gap:10px;
+  cursor:pointer;transition:all .2s;
+}
+.p-opt:hover{background:var(--s3);border-color:var(--bdrhi);}
+.p-opt.sel{background:rgba(255,255,255,.06);border-color:var(--bdr2);}
+.p-opt.correct{background:rgba(74,138,80,.1);border-color:rgba(74,138,80,.3);}
+.p-opt.wrong{background:rgba(208,80,64,.1);border-color:rgba(208,80,64,.3);}
+.opt-letter{
+  width:22px;height:22px;border-radius:6px;
+  background:var(--s4);border:1px solid var(--bdr);
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;color:var(--tmd);
+  flex-shrink:0;font-family:'DM Mono',monospace;
+  transition:all .2s;
+}
+.p-opt.sel .opt-letter{background:var(--thi);color:var(--bg);border-color:var(--thi);}
+.p-opt.correct .opt-letter{background:rgba(74,138,80,.5);color:#fff;border-color:transparent;}
+.p-opt.wrong .opt-letter{background:rgba(208,80,64,.5);color:#fff;border-color:transparent;}
+.opt-text{font-size:13px;color:var(--tmd);}
+.p-opt.sel .opt-text,.p-opt.correct .opt-text{color:var(--thi);}
+
+.pc-actions{display:flex;gap:10px;}
+.btn-submit{
+  flex:1;padding:11px;
+  background:var(--thi);color:var(--bg);
+  border:none;border-radius:10px;
+  font-family:'Jost',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;transition:all .2s;
+}
+.btn-submit:hover{background:#e0e0e0;transform:translateY(-1px);}
+.btn-submit:disabled{background:var(--s4);color:var(--tlo);cursor:not-allowed;transform:none;}
+.btn-hint-dc{
+  padding:11px 18px;
+  background:var(--s2);border:1px solid var(--bdr);
+  border-radius:10px;color:var(--tmd);
+  font-family:'Jost',sans-serif;font-size:13px;
+  cursor:pointer;transition:all .2s;
+}
+.btn-hint-dc:hover{border-color:var(--bdrhi);color:var(--thi);}
+
+/* RESULT */
+.result-card{
+  background:var(--s1);border:1px solid var(--bdr);
+  border-radius:14px;padding:20px 22px;
+  margin-bottom:16px;display:none;
+  animation:fadeUp .3s ease both;
+}
+.result-card.show{display:block;}
+.result-card.correct{border-color:rgba(74,138,80,.3);background:rgba(74,138,80,.05);}
+.result-card.wrong{border-color:rgba(208,80,64,.3);background:rgba(208,80,64,.05);}
+.result-icon{font-size:28px;margin-bottom:10px;}
+.result-title{font-size:15px;font-weight:600;color:var(--thi);margin-bottom:6px;}
+.result-text{font-size:12.5px;color:var(--tmd);line-height:1.6;}
+.result-text strong{color:var(--thi);font-weight:500;}
+
+/* LEADERBOARD */
+.section-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--tdm);margin-bottom:12px;display:flex;align-items:center;gap:8px;}
+.section-lbl::after{content:'';flex:1;height:1px;background:var(--bdr);}
+
+.lb-card{background:var(--s1);border:1px solid var(--bdr);border-radius:14px;overflow:hidden;}
+.lb-row{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:1px solid var(--bdr);transition:background .15s;}
+.lb-row:last-child{border-bottom:none;}
+.lb-row:hover{background:rgba(255,255,255,.015);}
+.lb-row.me{background:rgba(255,255,255,.03);border-bottom-color:var(--bdrhi);}
+.lb-rank{font-family:'DM Mono',monospace;font-size:12px;color:var(--tdm);min-width:22px;}
+.lb-rank.gold{color:var(--gold);}
+.lb-av{width:24px;height:24px;border-radius:50%;background:var(--s4);border:1px solid var(--bdr);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;}
+.lb-name{font-size:12.5px;color:var(--tmd);flex:1;}
+.lb-row.me .lb-name{color:var(--thi);font-weight:500;}
+.lb-time{font-family:'DM Mono',monospace;font-size:11px;color:var(--tlo);}
+.lb-badge{font-size:9px;padding:2px 7px;border-radius:8px;font-weight:600;}
+.lb-badge.solved{background:rgba(74,138,80,.14);color:#6ab870;border:1px solid rgba(74,138,80,.22);}
+.lb-badge.unsolved{background:var(--s3);color:var(--tlo);border:1px solid var(--bdr);}
+
+@media(max-width:600px){
+  .dc-header{flex-direction:column;gap:12px;}
+  .streak-card{align-self:flex-start;}
+  .stats-row{grid-template-columns:repeat(3,1fr);gap:7px;}
+  .sm-val{font-size:18px;}
+  .sm-lbl{font-size:9.5px;}
+  .problem-options{grid-template-columns:1fr;}
+  .pc-body{padding:16px 14px 14px;}
+  .problem-text{font-size:15px;}
+  .pc-head{padding:12px 14px;}
+  .pc-actions{flex-direction:column;}
+  .btn-hint-dc{width:100%;text-align:center;}
+  .lb-row{padding:9px 12px;gap:8px;}
+  .lb-name{font-size:11.5px;}
+  .container{padding:18px 14px 60px;}
+  nav{padding:0 14px;}
+}
+@media(max-width:380px){
+  .stats-row{grid-template-columns:1fr 1fr;}
+  .sm-delta{display:none;}
+  .dc-title{font-size:20px;}
+  .dc-date{font-size:10px;}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="#" class="nav-logo">
+    <div class="nav-logo-mark">Φ</div>
+    Phi<em>Prep</em>
+  </a>
+  <div class="nav-sp"></div>
+  <button class="nav-btn">← Back to chat</button>
+  <div class="nav-av">D</div>
+</nav>
+
+<div class="main">
+<div class="container">
+
+  <!-- HEADER -->
+  <div class="dc-header">
+    <div class="dc-title-group">
+      <div class="dc-label">Daily Challenge</div>
+      <div class="dc-title">Sunday, 22 March 2026</div>
+      <div class="dc-date">Problem #247 · JEE Advanced · Calculus</div>
+    </div>
+    <div class="streak-card">
+      <div class="streak-flames">🔥🔥🔥🔥</div>
+      <div class="streak-info">
+        <div class="streak-num">14</div>
+        <div class="streak-lbl">day streak</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-row">
+    <div class="stat-mini">
+      <div class="sm-val">68<span style="font-size:12px;color:var(--tlo)">%</span></div>
+      <div class="sm-lbl">Overall accuracy</div>
+      <div class="sm-delta up">↑ +3% this week</div>
+    </div>
+    <div class="stat-mini">
+      <div class="sm-val">247</div>
+      <div class="sm-lbl">Problems solved</div>
+      <div class="sm-delta up">↑ 12 this week</div>
+    </div>
+    <div class="stat-mini">
+      <div class="sm-val">3</div>
+      <div class="sm-lbl">Challenges won</div>
+      <div class="sm-delta dn">↓ Best: 7</div>
+    </div>
+  </div>
+
+  <!-- PROBLEM CARD -->
+  <div class="problem-card" id="problemCard">
+    <div class="pc-head">
+      <span class="pc-tag hard">Hard</span>
+      <span class="pc-tag topic">Integration · IBP</span>
+      <div class="pc-sp"></div>
+      <div class="timer-wrap">
+        <span class="timer-icon">⏱</span>
+        <span class="timer" id="timer">15:00</span>
+      </div>
+    </div>
+    <div class="pc-body">
+      <div class="problem-text" id="problemText">
+        If I<sub>n</sub> = ∫₀<sup>π/2</sup> xⁿ sin x dx, then I<sub>n</sub> + n(n−1)I<sub>n−2</sub> equals:
+      </div>
+      <div class="problem-options" id="problemOpts">
+        <div class="p-opt" onclick="selectOpt(this,'A')">
+          <div class="opt-letter">A</div>
+          <div class="opt-text">nπⁿ⁻¹/2ⁿ</div>
+        </div>
+        <div class="p-opt" onclick="selectOpt(this,'B')">
+          <div class="opt-letter">B</div>
+          <div class="opt-text">n(π/2)ⁿ⁻¹</div>
+        </div>
+        <div class="p-opt" onclick="selectOpt(this,'C')">
+          <div class="opt-letter">C</div>
+          <div class="opt-text">(π/2)ⁿ</div>
+        </div>
+        <div class="p-opt" onclick="selectOpt(this,'D')">
+          <div class="opt-letter">D</div>
+          <div class="opt-text">n · (π/2)ⁿ⁻¹</div>
+        </div>
+      </div>
+      <div class="pc-actions">
+        <button class="btn-submit" id="submitBtn" disabled onclick="submitAnswer()">Submit answer</button>
+        <button class="btn-hint-dc" onclick="showHint()">Hint</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESULT (shown after submit) -->
+  <div class="result-card" id="resultCard">
+    <div class="result-icon" id="resultIcon"></div>
+    <div class="result-title" id="resultTitle"></div>
+    <div class="result-text" id="resultText"></div>
+  </div>
+
+  <!-- LEADERBOARD -->
+  <div class="section-lbl">Today's Leaderboard</div>
+  <div class="lb-card">
+    <div class="lb-row">
+      <span class="lb-rank gold">01</span>
+      <div class="lb-av">A</div>
+      <span class="lb-name">Aryan K.</span>
+      <span class="lb-time">02:14</span>
+      <span class="lb-badge solved">Solved ✓</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank gold">02</span>
+      <div class="lb-av">P</div>
+      <span class="lb-name">Priya S.</span>
+      <span class="lb-time">04:41</span>
+      <span class="lb-badge solved">Solved ✓</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank">03</span>
+      <div class="lb-av">R</div>
+      <span class="lb-name">Rahul M.</span>
+      <span class="lb-time">07:03</span>
+      <span class="lb-badge solved">Solved ✓</span>
+    </div>
+    <div class="lb-row me">
+      <span class="lb-rank">04</span>
+      <div class="lb-av" style="background:var(--s5);border-color:var(--bdrhi)">D</div>
+      <span class="lb-name">You</span>
+      <span class="lb-time" id="myTime">—</span>
+      <span class="lb-badge unsolved" id="myBadge">In progress</span>
+    </div>
+    <div class="lb-row">
+      <span class="lb-rank">05</span>
+      <div class="lb-av">S</div>
+      <span class="lb-name">Shreya T.</span>
+      <span class="lb-time">—</span>
+      <span class="lb-badge unsolved">Not started</span>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<script>
+/* ── Timer ── */
+let timerSec = 900, timerRunning = true, startTime = Date.now();
+const timerEl = document.getElementById('timer');
+const timerInterval = setInterval(()=>{
+  if(!timerRunning) return;
+  timerSec--;
+  const m=Math.floor(timerSec/60), s=timerSec%60;
+  timerEl.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+  if(timerSec<=120) timerEl.classList.add('warn');
+  if(timerSec<=0){ clearInterval(timerInterval); timerEl.textContent='Time up'; timerRunning=false; }
+},1000);
+
+/* ── Option select ── */
+let selectedOpt = null;
+function selectOpt(el, letter) {
+  if(!timerRunning && timerSec<=0) return;
+  const card = document.getElementById('resultCard');
+  if(card.classList.contains('show')) return;
+  document.querySelectorAll('.p-opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedOpt = letter;
+  document.getElementById('submitBtn').disabled = false;
+}
+
+/* ── Submit ── */
+const CORRECT = 'B';
+function submitAnswer() {
+  if(!selectedOpt) return;
+  timerRunning = false;
+  clearInterval(timerInterval);
+  const elapsed = Math.floor((Date.now()-startTime)/1000);
+  const m=Math.floor(elapsed/60), s=elapsed%60;
+  const timeStr = `${m}:${s.toString().padStart(2,'0')}`;
+  document.getElementById('myTime').textContent = timeStr;
+
+  const opts = document.querySelectorAll('.p-opt');
+  opts.forEach(o=>{
+    const letter = o.querySelector('.opt-letter').textContent;
+    if(letter===CORRECT) o.classList.add('correct');
+    else if(letter===selectedOpt && selectedOpt!==CORRECT) o.classList.add('wrong');
+    o.style.pointerEvents='none';
+  });
+
+  const rc = document.getElementById('resultCard');
+  rc.classList.add('show');
+  if(selectedOpt===CORRECT){
+    rc.classList.add('correct');
+    document.getElementById('resultIcon').textContent = '🎉';
+    document.getElementById('resultTitle').textContent = 'Correct! Well done.';
+    document.getElementById('resultText').innerHTML = 'Answer is <strong>B: n(π/2)ⁿ⁻¹</strong>. Using IBP on Iₙ and leveraging the reduction formula — differentiate u=xⁿ and integrate dv=sinx dx. The telescoping structure gives the result. <a style="color:var(--tmd);text-decoration:underline;cursor:pointer;">See full solution →</a>';
+    document.getElementById('myBadge').textContent = 'Solved ✓';
+    document.getElementById('myBadge').className = 'lb-badge solved';
+  } else {
+    rc.classList.add('wrong');
+    document.getElementById('resultIcon').textContent = '🤔';
+    document.getElementById('resultTitle').textContent = 'Not quite — but this is how you learn.';
+    document.getElementById('resultText').innerHTML = 'Correct answer: <strong>B: n(π/2)ⁿ⁻¹</strong>. The key insight is recognising the IBP reduction formula structure. Your answer was ' + selectedOpt + '. <a style="color:var(--tmd);text-decoration:underline;cursor:pointer;">Understand why →</a>';
+  }
+  document.getElementById('submitBtn').disabled = true;
+  document.getElementById('submitBtn').textContent = 'Submitted';
+}
+
+/* ── Hint ── */
+let hintShown=0;
+const hints=['Look at the structure of Iₙ — try IBP with u = xⁿ and dv = sin x dx.','After IBP, you get a reduction: Iₙ = −[xⁿ cos x]₀^(π/2) + n·Iₙ₋₁. Evaluate the boundary.','The key is evaluating at x=π/2 — cos(π/2)=0, so the boundary term simplifies cleanly.'];
+function showHint() {
+  if(hintShown>=hints.length) return;
+  alert('Hint ' + (hintShown+1) + ': ' + hints[hintShown]);
+  hintShown++;
+}
+</script>
+</body>
+</html>

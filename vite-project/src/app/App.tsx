@@ -1,83 +1,137 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useParams, useNavigate } from 'react-router-dom';
 import { Sidebar } from './components/Sidebar';
 import { MainChat } from './components/MainChat';
 import { DashboardPage } from './components/DashboardPage';
-import WelcomePage from './components/WelcomePage';
+import AuthPage from './components/AuthPage';
+import OnboardingFlow from './components/OnboardingFlow';
+import ChallengePage from './components/ChallengePage';
+import SettingsPage from './components/SettingsPage';
+import NotFoundPage from './components/NotFoundPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import React from 'react';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
-  if (isLoading) return <div className="h-screen flex items-center justify-center bg-black text-white">Loading...</div>;
+  if (isLoading) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif", fontSize: 13 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
+        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 32, fontWeight: 600 }}>Φ</div>
+        <div style={{ color: 'var(--tlo)' }}>Loading…</div>
+      </div>
+    </div>
+  );
   if (!token) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
+function OnboardingGuard({ children }: { children: React.ReactNode }) {
+  const { token, profile, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (!token) return <Navigate to="/" replace />;
+  // If already onboarded, go straight to chat
+  if (profile && profile.onboarded) return <Navigate to="/chat" replace />;
+  return <>{children}</>;
+}
+
 function ChatLayout() {
-  const [activeChatId, setActiveChatId] = React.useState<string | null>(null);
+  const { chatId } = useParams();
+  const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = React.useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
   const [refreshTrigger, setRefreshTrigger] = React.useState(0);
 
-  return (
-    <div
-      className="flex h-screen w-full bg-[#000000] text-[#EDEDED] overflow-hidden selection:bg-[#7C3AED]/30 font-sans antialiased relative"
-    >
-      {/* Premium Deep Background Layer */}
-      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden flex items-center justify-center">
-        {/* Core AI Glow (subtle, breathing) */}
-        <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-[#7C3AED]/[0.06] blur-[140px] rounded-full mix-blend-screen animate-pulse duration-[4000ms]"></div>
-        <div className="absolute bottom-[0%] right-[5%] w-[600px] h-[400px] bg-[#4F46E5]/[0.05] blur-[150px] rounded-full mix-blend-screen"></div>
+  const activeChatId = chatId || null;
+  const setActiveChatId = (id: string | null) => {
+    if (id) navigate(`/chat/${id}`);
+    else navigate('/chat');
+  };
 
-        {/* Film grain noise for premium texture */}
-        <div
-          className="absolute inset-0 opacity-[0.015] mix-blend-overlay"
-          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-        ></div>
+  return (
+    <div className="flex h-screen w-full overflow-hidden relative" style={{ background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif", cursor: 'none' }}>
+      {/* Subtle background glow — kept subtle, not the purple explosion */}
+      <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[10%] left-1/2 -translate-x-1/2 w-[600px] h-[400px] opacity-[0.04] blur-[120px] rounded-full" style={{ background: 'rgba(255,255,255,0.1)' }} />
       </div>
 
-      <div className="relative z-10 flex w-full h-full max-w-[1920px] mx-auto overflow-hidden">
-        {/* Mobile Sidebar Overlay */}
+      <div className="relative z-10 flex w-full h-full overflow-hidden">
+        {/* Mobile overlay */}
         {isSidebarOpen && (
-          <div 
-            className="fixed inset-0 bg-black/50 z-40 md:hidden" 
-            onClick={() => setIsSidebarOpen(false)}
-          />
+          <div className="fixed inset-0 bg-black/50 z-40 md:hidden" onClick={() => setIsSidebarOpen(false)} />
         )}
-        
-        {/* Sidebar Container */}
-        <div className={`fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-transform duration-300 ease-in-out`}>
-          <Sidebar 
-            activeChatId={activeChatId} 
+
+        {/* Sidebar */}
+        <div className={`fixed inset-y-0 left-0 z-50 transform ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'} md:relative md:translate-x-0 transition-all duration-300 ease-in-out ${isSidebarCollapsed ? 'md:w-20' : 'md:w-[280px]'}`}>
+          <Sidebar
+            activeChatId={activeChatId}
             refreshTrigger={refreshTrigger}
-            onSelectChat={(id) => { setActiveChatId(id); setIsSidebarOpen(false); }} 
-            onNewChat={() => { setActiveChatId(null); setIsSidebarOpen(false); }} 
+            collapsed={isSidebarCollapsed}
+            onSelectChat={(id) => { setActiveChatId(id); setIsSidebarOpen(false); }}
+            onNewChat={() => { setActiveChatId(null); setIsSidebarOpen(false); }}
+            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           />
         </div>
 
-        <MainChat 
-          activeChatId={activeChatId} 
-          onChatCreated={(id) => { setActiveChatId(id); setRefreshTrigger(prev => prev + 1); }} 
-          onMenuClick={() => setIsSidebarOpen(true)}
-        />
+        <div className="flex-1 flex flex-col min-w-0 h-full overflow-hidden">
+          <MainChat
+            activeChatId={activeChatId}
+            onChatCreated={(id) => { setActiveChatId(id); setRefreshTrigger(prev => prev + 1); }}
+            onMenuClick={() => setIsSidebarOpen(true)}
+            isSidebarCollapsed={isSidebarCollapsed}
+          />
+        </div>
       </div>
+
+      <style>{`@media(max-width:480px){ body{ cursor: auto!important; } }`}</style>
     </div>
   );
 }
 
 function AppRoutes() {
-  const { token, isLoading } = useAuth();
-  if (isLoading) return <div className="h-screen flex items-center justify-center bg-black text-white">Loading...</div>;
+  const { token, profile, isLoading } = useAuth();
+
+  if (isLoading) return (
+    <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif" }}>
+      <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 48, fontWeight: 600, color: 'rgba(255,255,255,.15)' }}>Φ</div>
+    </div>
+  );
+
   return (
     <Routes>
-      <Route path="/" element={token ? <Navigate to="/chat" replace /> : <WelcomePage />} />
+      {/* Public */}
+      <Route path="/" element={
+        token
+          ? (profile?.onboarded ? <Navigate to="/chat" replace /> : <Navigate to="/onboarding" replace />)
+          : <AuthPage />
+      } />
+
+      {/* Onboarding — shown once after first login */}
+      <Route path="/onboarding" element={
+        <OnboardingGuard>
+          <OnboardingFlow />
+        </OnboardingGuard>
+      } />
+
+      {/* Core app */}
       <Route path="/chat" element={<ProtectedRoute><ChatLayout /></ProtectedRoute>} />
+      <Route path="/chat/:chatId" element={<ProtectedRoute><ChatLayout /></ProtectedRoute>} />
+
+      {/* Secondary pages */}
       <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/challenge" element={<ProtectedRoute><ChallengePage /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+
+      {/* 404 */}
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 }
 
 export default function App() {
+  React.useEffect(() => {
+    const fs = localStorage.getItem('phi_chat_fs') || '12.5';
+    document.documentElement.style.setProperty('--chat-fs', `${fs}px`);
+  }, []);
+
   return (
     <AuthProvider>
       <AppRoutes />

@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PhiPrep — Stop Memorising. Start Thinking.</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,800;1,700;1,800&family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@400;500&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════
+   COLOR SYSTEM — Deep Forest Green
+═══════════════════════════════════════ */
+:root {
+  /* ── Universal PhiPrep B&W palette ── */
+  --bg:      #0a0a0a;
+  --bg2:     #0f0f0f;
+  --bg3:     #161616;
+  --card:    #111111;
+  --card2:   #161616;
+
+  --s2:      #161616;
+  --s3:      #1e1e1e;
+  --s4:      #252525;
+  --s5:      #2e2e2e;
+  --s6:      #383838;
+
+  --border:   rgba(255,255,255,0.07);
+  --borderhi: rgba(255,255,255,0.14);
+  --border2:  rgba(255,255,255,0.22);
+
+  --text:    #f0f0f0;
+  --textmd:  #a8a8a8;
+  --textlo:  #585858;
+  --textdim: #303030;
+
+  /* Accent: pure white as the "bright" signal */
+  --accent:   #ffffff;
+  --accenthi: #ffffff;
+  --acctxt:   #0a0a0a;
+
+  /* Semantic: keep danger red for SOS only */
+  --danger:   #e05040;
+  --dsoft:    rgba(224,80,64,0.10);
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Jost', sans-serif;
+  overflow-x: hidden;
+  cursor: none;
+}
+
+/* ── Custom cursor ── */
+.cursor {
+  width: 8px; height: 8px;
+  background: #ffffff;
+  border-radius: 50%;
+  position: fixed; top: 0; left: 0;
+  pointer-events: none; z-index: 9999;
+  transform: translate(-50%,-50%);
+  transition: width .2s, height .2s, background .2s;
+  mix-blend-mode: screen;
+}
+.cursor-ring {
+  width: 32px; height: 32px;
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 50%;
+  position: fixed; top: 0; left: 0;
+  pointer-events: none; z-index: 9998;
+  transform: translate(-50%,-50%);
+  transition: transform .08s linear, width .2s, height .2s;
+}
+body:has(a:hover) .cursor, body:has(button:hover) .cursor {
+  width: 14px; height: 14px;
+}
+
+/* ── Noise texture overlay ── */
+body::before {
+  content: '';
+  position: fixed; inset: 0; z-index: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+  opacity: 0.025;
+  pointer-events: none;
+}
+
+/* ── Global glow blobs ── */
+.blob {
+  position: fixed; border-radius: 50%;
+  filter: blur(120px); pointer-events: none; z-index: 0;
+}
+.blob-1 {
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%);
+  top: -200px; left: -100px;
+  animation: blobDrift 18s ease-in-out infinite alternate;
+}
+.blob-2 {
+  width: 500px; height: 500px;
+  background: radial-gradient(circle, rgba(255,255,255,0.03) 0%, transparent 70%);
+  bottom: 100px; right: -100px;
+  animation: blobDrift 22s ease-in-out infinite alternate-reverse;
+}
+.blob-3 {
+  width: 300px; height: 300px;
+  background: radial-gradient(circle, rgba(255,255,255,0.025) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  animation: blobDrift 14s ease-in-out infinite alternate;
+}
+@keyframes blobDrift {
+  from { transform: translate(0,0) scale(1); }
+  to   { transform: translate(40px,30px) scale(1.1); }
+}
+
+/* ── All content above bg ── */
+nav, section, footer { position: relative; z-index: 1; }
+
+/* ═══════════════════════════════════════
+   NAV
+═══════════════════════════════════════ */
+nav {
+  position: fixed; top: 0; left: 0; right: 0;
+  z-index: 100;
+  height: 64px;
+  display: flex; align-items: center;
+  padding: 0 48px;
+  border-bottom: 1px solid transparent;
+  transition: background .4s, border-color .4s, backdrop-filter .4s;
+}
+nav.scrolled {
+  background: rgba(10,10,10,0.92);
+  backdrop-filter: blur(16px);
+  border-color: var(--border);
+}
+.nav-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px; font-weight: 700;
+  color: var(--text); letter-spacing: .02em;
+  text-decoration: none;
+  display: flex; align-items: center; gap: 2px;
+}
+.nav-logo .logo-dot { color: var(--textmd); font-style: italic; }
+.nav-links {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  display: flex; align-items: center; gap: 36px;
+}
+.nav-links a {
+  font-size: 12px; font-weight: 600;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--textmd); text-decoration: none;
+  transition: color .2s;
+}
+.nav-links a:hover { color: var(--text); }
+.nav-cta {
+  background: var(--text);
+  color: var(--acctxt);
+  font-family: 'Jost', sans-serif;
+  font-size: 12px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
+  padding: 10px 22px; border-radius: 6px;
+  border: none; cursor: none;
+  transition: background .2s, transform .15s;
+  text-decoration: none;
+  display: flex; align-items: center; gap: 6px;
+  margin-left: auto;
+}
+.nav-cta:hover { background: #e0e0e0; transform: translateY(-1px); }
+
+/* ═══════════════════════════════════════
+   HERO
+═══════════════════════════════════════ */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center;
+  padding: 120px 24px 80px;
+  position: relative;
+}
+
+/* Radial glow behind hero text */
+.hero::before {
+  content: '';
+  position: absolute;
+  top: 20%; left: 50%;
+  transform: translateX(-50%);
+  width: 700px; height: 400px;
+  background: radial-gradient(ellipse, rgba(255,255,255,0.03) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.hero-pill {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--text);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.14);
+  padding: 6px 16px; border-radius: 20px;
+  margin-bottom: 36px;
+  align-self: center;
+  animation: fadeUp .8s .1s ease both;
+}
+.pill-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--text);
+  box-shadow: 0 0 8px rgba(255,255,255,0.5);
+  animation: pulse 2s ease infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.6;transform:scale(1.3)} }
+
+.hero-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(52px, 8vw, 96px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -.02em;
+  color: var(--text);
+  margin-bottom: 4px;
+  text-align: center;
+  width: 100%;
+  animation: fadeUp .8s .2s ease both;
+}
+.hero-heading-2 {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(52px, 8vw, 96px);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -.02em;
+  margin-bottom: 32px;
+  text-align: center;
+  width: 100%;
+  animation: fadeUp .8s .3s ease both;
+}
+.hero-heading-2 em {
+  font-style: italic;
+  color: var(--text);
+  display: inline-block;
+  position: relative;
+}
+/* Underline stroke under "thinking" */
+.hero-heading-2 em::after {
+  content: '';
+  position: absolute;
+  bottom: 4px; left: 0; right: 0; height: 3px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+  opacity: .4;
+  border-radius: 2px;
+}
+
+.hero-sub {
+  font-size: clamp(15px, 2vw, 18px);
+  font-weight: 300;
+  color: var(--textmd);
+  line-height: 1.7;
+  max-width: 520px;
+  margin: 0 auto 48px;
+  text-align: center;
+  animation: fadeUp .8s .4s ease both;
+}
+
+.hero-btns {
+  display: flex; gap: 14px; justify-content: center; align-items: center; flex-wrap: wrap;
+  width: 100%;
+  animation: fadeUp .8s .5s ease both;
+}
+.btn-primary {
+  background: var(--text);
+  color: var(--acctxt);
+  font-family: 'Jost', sans-serif;
+  font-size: 14px; font-weight: 700;
+  letter-spacing: .06em;
+  padding: 16px 32px; border-radius: 8px;
+  border: none; cursor: none; text-decoration: none;
+  display: flex; align-items: center; gap: 8px;
+  transition: background .2s, transform .15s, box-shadow .2s;
+  box-shadow: 0 0 0 0 rgba(255,255,255,0);
+}
+.btn-primary:hover {
+  background: #e0e0e0;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 32px rgba(255,255,255,0.10);
+}
+.btn-secondary {
+  background: transparent;
+  color: var(--textmd);
+  font-family: 'Jost', sans-serif;
+  font-size: 14px; font-weight: 500;
+  padding: 16px 32px; border-radius: 8px;
+  border: 1px solid var(--border2);
+  cursor: none; text-decoration: none;
+  transition: all .2s;
+}
+.btn-secondary:hover { color: var(--text); border-color: var(--borderhi); background: rgba(255,255,255,0.03); }
+
+/* ── Hero demo window ── */
+.hero-demo {
+  margin-top: 72px;
+  width: 100%; max-width: 780px;
+  align-self: center;
+  box-sizing: border-box;
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  overflow: hidden;
+  animation: fadeUp .8s .7s ease both;
+  box-shadow: 0 32px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03);
+}
+.demo-titlebar {
+  background: var(--card2);
+  padding: 12px 16px;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--border);
+}
+.demo-dots { display: flex; gap: 6px; }
+.demo-dot { width: 11px; height: 11px; border-radius: 50%; }
+.demo-dot:nth-child(1) { background: #e05040; }
+.demo-dot:nth-child(2) { background: #d0a030; }
+.demo-dot:nth-child(3) { background: #40b050; }
+.demo-title {
+  font-size: 10px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--textlo);
+}
+.demo-body {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+.demo-left {
+  padding: 20px;
+  border-right: 1px solid var(--border);
+}
+.demo-label {
+  font-size: 9px; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--textlo);
+  margin-bottom: 10px;
+}
+.demo-problem {
+  font-family: 'Instrument Serif', serif;
+  font-size: 14px; color: var(--textmd);
+  line-height: 1.6;
+}
+.demo-right { padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+.demo-chip {
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: 8px; padding: 9px 12px;
+  display: flex; align-items: flex-start; gap: 8px;
+}
+.demo-chip-icon {
+  width: 18px; height: 18px; border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 10px; flex-shrink: 0; margin-top: 1px;
+}
+.demo-chip-icon.blue { background: rgba(60,120,200,0.2); }
+.demo-chip-icon.green { background: rgba(60,160,80,0.2); }
+.demo-chip-icon.amber { background: rgba(180,120,40,0.2); }
+.demo-chip-text { font-size: 11.5px; color: var(--textmd); line-height: 1.5; }
+.demo-chip-text strong { color: var(--text); font-weight: 500; }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+/* ═══════════════════════════════════════
+   STATS BAR
+═══════════════════════════════════════ */
+.stats-bar {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+  display: grid; grid-template-columns: repeat(4,1fr);
+}
+.stat-cell {
+  padding: 40px 20px;
+  text-align: center;
+  border-right: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.stat-cell:last-child { border-right: none; }
+.stat-cell::before {
+  content: '';
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+  width: 60%; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  opacity: 0;
+  transition: opacity .3s;
+}
+.stat-cell:hover::before { opacity: .6; }
+.stat-num {
+  font-family: 'Playfair Display', serif;
+  font-size: 38px; font-weight: 700;
+  color: var(--text); line-height: 1;
+  margin-bottom: 8px;
+}
+.stat-desc {
+  font-size: 12px; color: var(--textmd);
+  font-weight: 400; line-height: 1.4;
+  max-width: 140px; margin: 0 auto;
+}
+
+/* ═══════════════════════════════════════
+   FEATURES SECTION
+═══════════════════════════════════════ */
+section { padding: 100px 48px; }
+.section-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--textlo);
+  margin-bottom: 20px; display: block;
+}
+.section-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(34px, 4vw, 52px);
+  font-weight: 800; line-height: 1.1;
+  color: var(--text);
+  margin-bottom: 16px;
+}
+.section-heading em {
+  font-style: italic; color: var(--textmd);
+}
+.section-sub {
+  font-size: 16px; color: var(--textmd);
+  font-weight: 300; line-height: 1.7;
+  max-width: 460px;
+}
+
+/* Feature cards */
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 56px;
+}
+.feat-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px 26px;
+  position: relative; overflow: hidden;
+  transition: border-color .3s, transform .25s;
+  cursor: none;
+}
+.feat-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  opacity: 0; transition: opacity .3s;
+}
+.feat-card:hover { border-color: var(--borderhi); transform: translateY(-4px); }
+.feat-card:hover::before { opacity: .7; }
+.feat-icon {
+  width: 44px; height: 44px; border-radius: 12px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; margin-bottom: 18px;
+}
+.feat-title {
+  font-size: 17px; font-weight: 600;
+  color: var(--text); margin-bottom: 10px;
+}
+.feat-desc {
+  font-size: 13px; color: var(--textmd);
+  font-weight: 300; line-height: 1.65;
+}
+.feat-tag {
+  display: inline-block; margin-top: 16px;
+  font-size: 9px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+  color: var(--textlo); background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.10);
+  padding: 3px 10px; border-radius: 20px;
+}
+
+/* ═══════════════════════════════════════
+   HOW IT WORKS
+═══════════════════════════════════════ */
+.how-section {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.how-inner {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 80px; align-items: center;
+  max-width: 1100px; margin: 0 auto;
+}
+.how-steps { display: flex; flex-direction: column; gap: 0; }
+.how-step {
+  display: flex; gap: 20px;
+  padding: 28px 0;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+  cursor: none;
+}
+.how-step:last-child { border-bottom: none; }
+.step-num {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px; color: var(--textdim);
+  min-width: 28px; padding-top: 3px;
+  flex-shrink: 0;
+}
+.step-content { flex: 1; }
+.step-title { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+.step-desc { font-size: 13px; color: var(--textmd); font-weight: 300; line-height: 1.6; }
+
+/* Dependency graph visual */
+.dep-graph {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 28px 24px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.dep-label {
+  font-size: 9px; font-weight: 700; letter-spacing: .14em;
+  text-transform: uppercase; color: var(--textlo);
+  margin-bottom: 4px;
+}
+.dep-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.dep-node {
+  padding: 8px 14px; border-radius: 20px;
+  font-size: 12px; font-weight: 500;
+  border: 1px solid var(--border2);
+  background: var(--card2); color: var(--textmd);
+  white-space: nowrap;
+}
+.dep-node.active {
+  background: rgba(255,255,255,0.07);
+  border-color: rgba(255,255,255,0.22);
+  color: var(--text);
+  box-shadow: none;
+}
+.dep-node.here {
+  background: rgba(255,255,255,0.10);
+  border-color: rgba(255,255,255,0.35);
+  color: var(--text);
+  font-weight: 600;
+  animation: nodeGlow 2.5s ease-in-out infinite;
+}
+@keyframes nodeGlow {
+  0%,100%{box-shadow:0 0 12px rgba(255,255,255,0.08)}
+  50%{box-shadow:0 0 24px rgba(255,255,255,0.18)}
+}
+.dep-arrow { color: var(--textdim); font-size: 14px; }
+.dep-arrow.dn { transform: rotate(90deg); margin-left: 20px; }
+
+/* Error bars visual */
+.err-visual {
+  background: var(--card);
+  border: 1px solid var(--border2);
+  border-radius: 16px;
+  padding: 24px;
+  margin-top: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.err-row { display: flex; align-items: center; gap: 12px; }
+.err-name { font-size: 12px; color: var(--textmd); flex:1; }
+.err-track { flex: 1.5; height: 4px; background: var(--card2); border-radius: 2px; overflow: hidden; }
+.err-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--s5), var(--text)); }
+.err-pct { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--textlo); min-width: 34px; text-align: right; }
+
+/* ═══════════════════════════════════════
+   PRICING
+═══════════════════════════════════════ */
+.pricing-section { text-align: center; }
+.pricing-section .section-heading,
+.pricing-section .section-sub { margin: 0 auto; }
+.pricing-section .section-sub { text-align: center; }
+.pricing-grid {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 16px; max-width: 720px;
+  margin: 56px auto 0;
+}
+.price-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 18px; padding: 36px 32px;
+  text-align: left; position: relative; overflow: hidden;
+  transition: border-color .3s;
+}
+.price-card.pro {
+  border-color: var(--borderhi);
+  background: linear-gradient(160deg, rgba(255,255,255,0.04) 0%, var(--card) 100%);
+}
+.price-card.pro::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+}
+.price-badge {
+  position: absolute; top: 16px; right: -10px;
+  background: var(--text); color: var(--acctxt);
+  font-size: 9px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase;
+  padding: 4px 14px 4px 10px;
+  clip-path: polygon(8px 0%, 100% 0%, 100% 100%, 8px 100%, 0% 50%);
+}
+.price-amount {
+  font-family: 'Playfair Display', serif;
+  font-size: 48px; font-weight: 700;
+  color: var(--text); line-height: 1;
+  margin-bottom: 6px;
+}
+.price-amount span { font-size: 20px; vertical-align: super; }
+.price-per { font-size: 13px; color: var(--textlo); margin-bottom: 6px; }
+.price-tagline { font-size: 13px; color: var(--textmd); font-weight: 300; margin-bottom: 28px; }
+.price-features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+.price-feat {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: 13px; color: var(--textmd); line-height: 1.4;
+}
+.pf-icon { font-size: 13px; flex-shrink: 0; margin-top: 1px; }
+.pf-icon.off { opacity: .35; }
+.price-feat.off { opacity: .45; }
+.btn-plan-free {
+  display: block; width: 100%; text-align: center;
+  padding: 13px; border-radius: 8px;
+  border: 1px solid var(--border2); color: var(--textmd);
+  font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 600;
+  letter-spacing: .05em; text-decoration: none;
+  transition: all .2s; cursor: none; background: transparent;
+}
+.btn-plan-free:hover { border-color: var(--borderhi); color: var(--text); }
+.btn-plan-pro {
+  display: block; width: 100%; text-align: center;
+  padding: 13px; border-radius: 8px;
+  background: var(--text); color: var(--acctxt);
+  font-family: 'Jost', sans-serif; font-size: 13px; font-weight: 700;
+  letter-spacing: .05em; text-decoration: none;
+  transition: all .2s; cursor: none; border: none;
+}
+.btn-plan-pro:hover { background: #e0e0e0; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(255,255,255,0.12); }
+
+/* ═══════════════════════════════════════
+   QUOTE / MISSION
+═══════════════════════════════════════ */
+.quote-section {
+  text-align: center;
+  padding: 100px 48px;
+  border-top: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--bg) 0%, var(--bg2) 100%);
+}
+.quote-mark {
+  font-family: 'Playfair Display', serif;
+  font-size: 80px; line-height: .7;
+  color: rgba(255,255,255,0.08);
+  margin-bottom: 20px; display: block;
+}
+.quote-text {
+  font-family: 'Instrument Serif', serif;
+  font-size: clamp(20px, 3vw, 28px);
+  color: var(--textmd);
+  line-height: 1.55;
+  max-width: 680px; margin: 0 auto 28px;
+  font-style: italic;
+}
+.quote-src {
+  font-size: 10px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--textlo);
+  display: flex; align-items: center; gap: 10px; justify-content: center;
+}
+.quote-src::before, .quote-src::after {
+  content: ''; flex: 0 0 40px; height: 1px; background: var(--border2);
+}
+
+/* ═══════════════════════════════════════
+   CTA FINAL
+═══════════════════════════════════════ */
+.cta-section {
+  padding: 100px 48px;
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 60px; align-items: center;
+  max-width: 1100px; margin: 0 auto;
+}
+.cta-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(36px, 4vw, 54px);
+  font-weight: 800; line-height: 1.1;
+  color: var(--text);
+}
+.cta-heading em { font-style: italic; color: var(--textmd); }
+.cta-body { font-size: 15px; color: var(--textmd); font-weight: 300; line-height: 1.7; margin: 16px 0 32px; }
+.cta-note { font-size: 11px; color: var(--textlo); margin-top: 12px; }
+.cta-right { position: relative; }
+.cta-card {
+  background: var(--card);
+  border: 1px solid var(--borderhi);
+  border-radius: 18px; padding: 32px;
+  position: relative; overflow: hidden;
+}
+.cta-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.cta-card-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 22px; font-weight: 700;
+  color: var(--text); margin-bottom: 20px;
+}
+.cta-stats { display: flex; flex-direction: column; gap: 14px; }
+.cta-stat { display: flex; align-items: center; gap: 12px; }
+.cta-stat-bar { flex: 1; height: 4px; background: var(--card2); border-radius: 2px; overflow: hidden; }
+.cta-stat-fill { height: 100%; border-radius: 2px; background: linear-gradient(90deg, var(--s5), var(--text)); animation: barGrow 1.4s ease both; }
+@keyframes barGrow { from{width:0} }
+.cta-stat-label { font-size: 11px; color: var(--textmd); min-width: 130px; }
+.cta-stat-val { font-family: 'DM Mono', monospace; font-size: 11px; color: var(--accent); min-width: 34px; text-align: right; }
+
+/* ═══════════════════════════════════════
+   FOOTER
+═══════════════════════════════════════ */
+footer {
+  background: var(--bg2);
+  border-top: 1px solid var(--border);
+  padding: 32px 48px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.footer-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 18px; font-weight: 700;
+  color: var(--textmd); text-decoration: none;
+}
+.footer-copy { font-size: 11px; color: var(--textdim); }
+
+/* ═══════════════════════════════════════
+   SCROLL ANIMATIONS
+═══════════════════════════════════════ */
+.reveal {
+  opacity: 0; transform: translateY(24px);
+  transition: opacity .7s ease, transform .7s ease;
+}
+.reveal.visible { opacity: 1; transform: translateY(0); }
+.reveal-delay-1 { transition-delay: .1s; }
+.reveal-delay-2 { transition-delay: .2s; }
+.reveal-delay-3 { transition-delay: .3s; }
+.reveal-delay-4 { transition-delay: .4s; }
+
+/* ═══════════════════════════════════════
+   HAMBURGER MENU (hidden on desktop)
+═══════════════════════════════════════ */
+.ham-btn {
+  display: none;
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  background: transparent;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 5px; flex-shrink: 0;
+  transition: background .2s, border-color .2s;
+  margin-left: auto;
+}
+.ham-btn:hover { background: rgba(255,255,255,0.05); border-color: var(--borderhi); }
+.ham-btn .hb {
+  display: block; width: 15px; height: 1.5px;
+  background: var(--textmd); border-radius: 2px;
+  transition: transform .3s cubic-bezier(.68,-.6,.32,1.6), opacity .18s, width .2s;
+  transform-origin: center;
+}
+.ham-btn.open .hb:nth-child(1) { transform: translateY(6.5px) rotate(45deg); }
+.ham-btn.open .hb:nth-child(2) { opacity:0; width:0; }
+.ham-btn.open .hb:nth-child(3) { transform: translateY(-6.5px) rotate(-45deg); }
+
+/* Mobile drawer */
+.mob-drawer {
+  display: none;
+  position: fixed;
+  top: 64px; left: 0; right: 0;
+  background: rgba(10,10,10,0.98);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0;
+  z-index: 99;
+  flex-direction: column;
+  transform: translateY(-8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform .28s cubic-bezier(.4,0,.2,1), opacity .24s ease;
+}
+.mob-drawer.open {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: all;
+}
+.mob-drawer a {
+  display: block;
+  padding: 16px 24px;
+  font-size: 13px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase;
+  color: var(--textmd); text-decoration: none;
+  border-bottom: 1px solid var(--border);
+  transition: color .2s, background .2s;
+}
+.mob-drawer a:hover { color: var(--text); background: rgba(255,255,255,0.03); }
+.mob-drawer a.mob-cta {
+  color: var(--acctxt);
+  background: var(--text);
+  border-bottom: none;
+  margin: 16px 24px 20px;
+  border-radius: 8px;
+  text-align: center;
+}
+.mob-drawer a.mob-cta:hover { background: #e0e0e0; }
+
+/* Mobile sticky CTA bar */
+.mob-cta-bar {
+  display: none;
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  padding: 12px 16px;
+  background: rgba(10,10,10,0.97);
+  border-top: 1px solid var(--border);
+  backdrop-filter: blur(16px);
+  z-index: 80;
+}
+.mob-cta-bar a {
+  display: block; width: 100%;
+  padding: 14px;
+  background: var(--text); color: var(--acctxt);
+  font-family: 'Jost', sans-serif;
+  font-size: 14px; font-weight: 700;
+  letter-spacing: .06em; text-decoration: none;
+  border-radius: 10px; text-align: center;
+  transition: background .2s;
+}
+.mob-cta-bar a:hover { background: #e0e0e0; }
+
+/* ═══════════════════════════════════════
+   TABLET (≤1024px)
+═══════════════════════════════════════ */
+@media (max-width: 1024px) {
+  .features-grid { grid-template-columns: 1fr 1fr; }
+  .how-inner { gap: 48px; }
+  .cta-section { gap: 40px; }
+  section { padding: 80px 36px; }
+  .how-section { padding: 80px 36px; }
+  .pricing-section { padding: 80px 36px; }
+  .quote-section { padding: 80px 36px; }
+}
+
+/* ═══════════════════════════════════════
+   SMALL TABLET (≤768px)
+═══════════════════════════════════════ */
+@media (max-width: 768px) {
+  /* Nav: hide desktop links, show hamburger */
+  .nav-links { display: none; }
+  .nav-cta   { display: none; }
+  .ham-btn   { display: flex; }
+  .mob-drawer{ display: flex; }
+
+  nav { padding: 0 20px; height: 60px; }
+  .mob-drawer { top: 60px; }
+
+  /* Hero */
+  .hero { padding: 90px 20px 60px; text-align: center; align-items: center; }
+  .hero-heading, .hero-heading-2 { font-size: clamp(38px, 8.5vw, 68px); }
+  .hero-sub { font-size: 16px; }
+  .hero-demo { margin-top: 48px; }
+  .demo-body { grid-template-columns: 1fr; }
+  .demo-left { border-right: none; border-bottom: 1px solid var(--border); }
+
+  /* Stats — 2×2 grid */
+  .stats-bar { grid-template-columns: 1fr 1fr; }
+  .stat-cell { border-right: 1px solid var(--border); }
+  .stat-cell:nth-child(2) { border-right: none; }
+  .stat-cell:nth-child(3) { border-top: 1px solid var(--border); }
+  .stat-cell:nth-child(4) { border-top: 1px solid var(--border); border-right: none; }
+  .stat-cell { padding: 32px 16px; }
+  .stat-num { font-size: 34px; }
+
+  /* Features */
+  .features-grid { grid-template-columns: 1fr; gap: 12px; }
+  section { padding: 64px 24px; }
+
+  /* How it works */
+  .how-inner { grid-template-columns: 1fr; gap: 40px; }
+  .how-section { padding: 64px 24px; }
+
+  /* Pricing */
+  .pricing-grid { grid-template-columns: 1fr; max-width: 460px; margin-left: auto; margin-right: auto; width: 100%; }
+  .pricing-section { padding: 64px 24px; }
+
+  /* CTA */
+  .cta-section { grid-template-columns: 1fr; gap: 32px; }
+  .quote-section { padding: 64px 24px; }
+
+  /* Footer */
+  footer { padding: 28px 24px; flex-direction: column; gap: 10px; text-align: center; }
+
+  /* Mobile CTA bar visible */
+  .mob-cta-bar { display: block; }
+  /* Add bottom padding so content isn't hidden behind bar */
+  footer { padding-bottom: 100px; }
+}
+
+/* ═══════════════════════════════════════
+   MOBILE (≤480px)
+═══════════════════════════════════════ */
+@media (max-width: 480px) {
+  nav { padding: 0 16px; height: 56px; }
+  .mob-drawer { top: 56px; }
+  .nav-logo { font-size: 19px; }
+
+  /* Hero — tighter */
+  .hero { padding: 76px 16px 48px; text-align: center; align-items: center; width: 100%; }
+  .hero-heading, .hero-heading-2 { font-size: clamp(34px, 10.5vw, 52px); letter-spacing: -.02em; }
+  .hero-sub { font-size: 15px; max-width: 100%; }
+  .hero-pill { font-size: 9px; padding: 5px 13px; }
+  .hero-btns { flex-direction: column; align-items: center; gap: 10px; width: 100%; }
+  .btn-primary, .btn-secondary {
+    width: min(300px, 100%); justify-content: center;
+    padding: 15px 24px; font-size: 14px; text-align: center;
+  }
+
+  /* Demo window — compact */
+  .hero-demo { margin-top: 36px; border-radius: 12px; }
+  .demo-titlebar { padding: 10px 14px; }
+  .demo-left, .demo-right { padding: 16px; }
+  .demo-problem { font-size: 13px; }
+  .demo-chip { padding: 8px 10px; gap: 6px; }
+  .demo-chip-text { font-size: 11px; }
+
+  /* Stats — 2×2 maintained */
+  .stats-bar { grid-template-columns: 1fr 1fr; }
+  .stat-cell { padding: 26px 14px; }
+  .stat-num { font-size: 28px; }
+  .stat-desc { font-size: 11px; }
+
+  /* Section headings */
+  .section-heading { font-size: clamp(26px, 7.5vw, 40px); }
+  section { padding: 52px 16px; }
+  .pricing-grid { margin-left: auto; margin-right: auto; }
+
+  /* Feature cards */
+  .feat-card { padding: 22px 20px; border-radius: 14px; }
+  .feat-title { font-size: 16px; }
+  .feat-desc  { font-size: 12.5px; }
+
+  /* How it works */
+  .how-section { padding: 52px 16px; }
+  .how-step { padding: 22px 0; gap: 14px; }
+  .step-title { font-size: 15px; }
+  .step-desc  { font-size: 12.5px; }
+
+  /* Dep graph — smaller nodes */
+  .dep-node { font-size: 11px; padding: 6px 11px; }
+  .dep-graph { padding: 18px 16px; }
+  .err-visual { padding: 18px 16px; }
+  .err-name { font-size: 11px; }
+
+  /* Pricing */
+  .pricing-section { padding: 52px 16px; }
+  .price-card { padding: 28px 24px; border-radius: 16px; }
+  .price-amount { font-size: 42px; }
+  .price-feat { font-size: 13px; }
+
+  /* Quote */
+  .quote-section { padding: 52px 16px; }
+  .quote-mark { font-size: 60px; }
+  .quote-text { font-size: clamp(17px, 4.5vw, 24px); }
+
+  /* CTA section */
+  .cta-heading { font-size: clamp(30px, 8vw, 46px); }
+  .cta-card { padding: 24px 20px; }
+  .cta-stat-label { font-size: 10px; min-width: 110px; }
+  .cta-stat-val { font-size: 10px; }
+
+  /* Footer */
+  footer { padding: 24px 16px 100px; }
+
+  /* Cursor off on touch */
+  body { cursor: auto; }
+  .cursor, .cursor-ring { display: none; }
+}
+
+/* ═══════════════════════════════════════
+   VERY SMALL (≤360px)
+═══════════════════════════════════════ */
+@media (max-width: 360px) {
+  .hero-heading, .hero-heading-2 { font-size: 34px; }
+  .stats-bar { grid-template-columns: 1fr; }
+  .stat-cell { border-right: none !important; border-top: 1px solid var(--border) !important; }
+  .stat-cell:first-child { border-top: none !important; }
+  .dep-row { flex-wrap: wrap; }
+}
+
+/* ═══════════════════════════════════════
+   CONTACT SECTION
+═══════════════════════════════════════ */
+.contact-section {
+  padding: 100px 48px;
+  border-top: 1px solid var(--border);
+  position: relative; z-index: 1;
+}
+.contact-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;
+  gap: 80px;
+  align-items: flex-start;
+}
+.contact-left { position: sticky; top: 84px; }
+.contact-tag {
+  font-size: 10px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--textlo);
+  display: block; margin-bottom: 18px;
+}
+.contact-heading {
+  font-family: 'Playfair Display', serif;
+  font-size: clamp(32px, 4vw, 48px);
+  font-weight: 800; line-height: 1.1;
+  color: var(--text); margin-bottom: 14px;
+}
+.contact-heading em { font-style: italic; color: var(--textmd); }
+.contact-sub {
+  font-size: 14px; color: var(--textmd);
+  font-weight: 300; line-height: 1.7;
+  max-width: 340px;
+}
+
+/* Contact cards grid */
+.contact-cards {
+  display: flex; flex-direction: column;
+  gap: 12px;
+}
+.contact-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px 22px;
+  display: flex; align-items: flex-start; gap: 16px;
+  transition: border-color .25s, transform .2s;
+  text-decoration: none;
+  position: relative; overflow: hidden;
+}
+.contact-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  opacity: 0; transition: opacity .3s;
+}
+.contact-card:hover { border-color: var(--borderhi); transform: translateY(-2px); }
+.contact-card:hover::before { opacity: 1; }
+.contact-card.email-card:hover { border-color: rgba(255,255,255,0.22); }
+
+.cc-icon {
+  width: 40px; height: 40px; border-radius: 11px;
+  background: var(--s3); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px; flex-shrink: 0;
+}
+.cc-body { flex: 1; min-width: 0; }
+.cc-label {
+  font-size: 9px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: var(--textlo);
+  margin-bottom: 4px;
+}
+.cc-value {
+  font-size: 15px; font-weight: 500; color: var(--text);
+  margin-bottom: 4px; word-break: break-all;
+}
+.cc-desc { font-size: 12px; color: var(--textlo); line-height: 1.5; }
+.cc-arrow {
+  font-size: 16px; color: var(--textdim);
+  align-self: center; flex-shrink: 0;
+  transition: transform .2s, color .2s;
+}
+.contact-card:hover .cc-arrow { transform: translateX(3px); color: var(--textmd); }
+
+/* Coming soon card */
+.contact-card.soon {
+  opacity: .5; pointer-events: none;
+  border-style: dashed;
+}
+.soon-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: .1em;
+  text-transform: uppercase;
+  background: var(--s4); color: var(--textlo);
+  border: 1px solid var(--border);
+  padding: 2px 8px; border-radius: 20px;
+  align-self: center; flex-shrink: 0; white-space: nowrap;
+}
+
+/* Response time strip */
+.response-strip {
+  margin-top: 16px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px;
+  background: var(--s2); border-radius: 10px;
+  border: 1px solid var(--border);
+}
+.rs-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: #4a8a4a;
+  box-shadow: 0 0 8px rgba(74,138,74,0.5);
+  animation: rsPulse 2.5s ease infinite;
+  flex-shrink: 0;
+}
+@keyframes rsPulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.rs-text { font-size: 12px; color: var(--textmd); }
+.rs-text strong { color: var(--text); font-weight: 500; }
+
+/* Responsive */
+@media (max-width: 900px) {
+  .contact-inner { grid-template-columns: 1fr; gap: 40px; }
+  .contact-left  { position: static; }
+  .contact-section { padding: 80px 36px; }
+}
+@media (max-width: 480px) {
+  .contact-section { padding: 52px 16px; }
+  .contact-card { padding: 16px 18px; gap: 13px; }
+  .cc-icon { width: 36px; height: 36px; font-size: 16px; border-radius: 10px; }
+  .cc-value { font-size: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- Custom cursor -->
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- BG blobs -->
+<div class="blob blob-1"></div>
+<div class="blob blob-2"></div>
+<div class="blob blob-3"></div>
+
+<!-- ── NAV ── -->
+<nav id="nav">
+  <a href="#" class="nav-logo">Phi<span class="logo-dot">Prep</span></a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#contact">Contact</a>
+  </div>
+  <a href="#" class="nav-cta">Try for free &rarr;</a>
+  <button class="ham-btn" id="hamBtn" aria-label="Menu">
+    <span class="hb"></span><span class="hb"></span><span class="hb"></span>
+  </button>
+</nav>
+
+<!-- Mobile nav drawer -->
+<div class="mob-drawer" id="mobDrawer">
+  <a href="#features" class="mob-link">Features</a>
+  <a href="#how"      class="mob-link">How it works</a>
+  <a href="#pricing"  class="mob-link">Pricing</a>
+  <a href="#contact"  class="mob-link">Contact</a>
+  <a href="#"         class="mob-cta">Try for free &rarr;</a>
+</div>
+
+<!-- Mobile sticky bottom CTA -->
+<div class="mob-cta-bar">
+  <a href="#">Start thinking free &rarr;</a>
+</div>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-pill">
+    <span class="pill-dot"></span>
+    Built for JEE aspirants
+  </div>
+  <h1 class="hero-heading">Stop memorising.</h1>
+  <h1 class="hero-heading-2">Start <em>thinking</em>.</h1>
+  <p class="hero-sub">PhiPrep doesn't give you answers. It rewires how you approach unfamiliar problems — the skill that actually wins JEE.</p>
+  <div class="hero-btns">
+    <a href="#" class="btn-primary">Start thinking free →</a>
+    <a href="#how" class="btn-secondary">See how it works</a>
+  </div>
+
+  <!-- Demo window -->
+  <div class="hero-demo">
+    <div class="demo-titlebar">
+      <div class="demo-dots">
+        <div class="demo-dot"></div>
+        <div class="demo-dot"></div>
+        <div class="demo-dot"></div>
+      </div>
+      <span class="demo-title">PhiPrep — Math X-Ray</span>
+    </div>
+    <div class="demo-body">
+      <div class="demo-left">
+        <div class="demo-label">Problem</div>
+        <p class="demo-problem">If α and β are roots of x² − px + q = 0, find the equation whose roots are α² + β and β² + α.</p>
+      </div>
+      <div class="demo-right">
+        <div class="demo-chip">
+          <div class="demo-chip-icon blue">🔍</div>
+          <div class="demo-chip-text"><strong>Identify:</strong> Vieta's formulas link — α+β = p, αβ = q</div>
+        </div>
+        <div class="demo-chip">
+          <div class="demo-chip-icon green">⚙</div>
+          <div class="demo-chip-text"><strong>Strategy:</strong> Compute new roots via sum and product</div>
+        </div>
+        <div class="demo-chip">
+          <div class="demo-chip-icon amber">📋</div>
+          <div class="demo-chip-text"><strong>Prerequisite:</strong> Symmetric functions of roots</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── STATS BAR ── -->
+<div class="stats-bar">
+  <div class="stat-cell reveal">
+    <div class="stat-num">12L+</div>
+    <div class="stat-desc">JEE aspirants write every year</div>
+  </div>
+  <div class="stat-cell reveal reveal-delay-1">
+    <div class="stat-num">#1</div>
+    <div class="stat-desc">Pain point: knowing which method to use</div>
+  </div>
+  <div class="stat-cell reveal reveal-delay-2">
+    <div class="stat-num">3×</div>
+    <div class="stat-desc">Faster conceptual clarity</div>
+  </div>
+  <div class="stat-cell reveal reveal-delay-3">
+    <div class="stat-num">∞</div>
+    <div class="stat-desc">Mistake memory, zero judgment</div>
+  </div>
+</div>
+
+<!-- ── FEATURES ── -->
+<section id="features">
+  <div style="max-width:1100px;margin:0 auto">
+    <div class="reveal">
+      <span class="section-tag">Core Capabilities</span>
+      <h2 class="section-heading">Not a doubt solver.<br><em>A thinking engine.</em></h2>
+      <p class="section-sub">Three tools that work together to expose how you think — and sharpen it.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card reveal reveal-delay-1">
+        <div class="feat-icon">🧠</div>
+        <div class="feat-title">Math X-Ray</div>
+        <p class="feat-desc">Breaks down any JEE problem into its underlying reasoning chain — what concept applies, why, and what traps to avoid. No answer given. Just clarity.</p>
+        <span class="feat-tag">Brain Mode</span>
+      </div>
+      <div class="feat-card reveal reveal-delay-2">
+        <div class="feat-icon">🔬</div>
+        <div class="feat-title">Mistake Analyzer</div>
+        <p class="feat-desc">Tracks your errors over time and diagnoses the root cause — not the symptom. Identifies if you have a conceptual gap or an application blind spot.</p>
+        <span class="feat-tag">Error Taxonomy</span>
+      </div>
+      <div class="feat-card reveal reveal-delay-3">
+        <div class="feat-icon">🗺</div>
+        <div class="feat-title">Concept Graph</div>
+        <p class="feat-desc">Maps every concept you touch to a dependency graph. Shows exactly what you need to master before moving forward — no random grinding.</p>
+        <span class="feat-tag">Knowledge Map</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── HOW IT WORKS ── -->
+<section class="how-section" id="how">
+  <div class="how-inner">
+    <div>
+      <span class="section-tag reveal">Process</span>
+      <h2 class="section-heading reveal">How PhiPrep<br><em>teaches you to think</em></h2>
+
+      <div class="how-steps" style="margin-top:40px">
+        <div class="how-step reveal">
+          <span class="step-num">01</span>
+          <div class="step-content">
+            <div class="step-title">Upload or type your problem</div>
+            <div class="step-desc">Photo, text, or typed equation — PhiPrep reads it all via advanced OCR.</div>
+          </div>
+        </div>
+        <div class="how-step reveal reveal-delay-1">
+          <span class="step-num">02</span>
+          <div class="step-content">
+            <div class="step-title">X-Ray activates</div>
+            <div class="step-desc">The AI identifies the pattern, picks the right method, and shows you the first move — never the full answer.</div>
+          </div>
+        </div>
+        <div class="how-step reveal reveal-delay-2">
+          <span class="step-num">03</span>
+          <div class="step-content">
+            <div class="step-title">You solve. PhiPrep watches.</div>
+            <div class="step-desc">Submit your attempt step by step. The Mistake Analyzer reads your reasoning, not just the answer.</div>
+          </div>
+        </div>
+        <div class="how-step reveal reveal-delay-3">
+          <span class="step-num">04</span>
+          <div class="step-content">
+            <div class="step-title">Memory builds over time</div>
+            <div class="step-desc">Your concept graph evolves. PhiPrep surfaces your blind spots before they cost you marks on exam day.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: visuals -->
+    <div class="reveal reveal-delay-2">
+      <div class="dep-graph">
+        <div class="dep-label">Concept dependency graph</div>
+        <div class="dep-row">
+          <div class="dep-node active">Quadratic Roots</div>
+          <span class="dep-arrow">→</span>
+          <div class="dep-node active">Vieta's Formulas</div>
+        </div>
+        <div class="dep-row" style="padding-left:20px">
+          <span class="dep-arrow">↓</span>
+        </div>
+        <div class="dep-row">
+          <div class="dep-node here">Symmetric Functions ← you are here</div>
+        </div>
+        <div class="dep-row" style="padding-left:20px">
+          <span class="dep-arrow">↓</span>
+        </div>
+        <div class="dep-row">
+          <div class="dep-node">Complex Roots</div>
+          <span class="dep-arrow">→</span>
+          <div class="dep-node">Transformation of Eq.</div>
+        </div>
+      </div>
+
+      <div class="err-visual">
+        <div class="dep-label">Error pattern — last 30 days</div>
+        <div class="err-row">
+          <span class="err-name">Sign errors in substitution</span>
+          <div class="err-track"><div class="err-fill" style="width:80%"></div></div>
+          <span class="err-pct">80%</span>
+        </div>
+        <div class="err-row">
+          <span class="err-name">Skipping discriminant check</span>
+          <div class="err-track"><div class="err-fill" style="width:55%"></div></div>
+          <span class="err-pct">55%</span>
+        </div>
+        <div class="err-row">
+          <span class="err-name">Wrong formula recall</span>
+          <div class="err-track"><div class="err-fill" style="width:30%"></div></div>
+          <span class="err-pct">30%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── PRICING ── -->
+<section class="pricing-section" id="pricing">
+  <span class="section-tag reveal">Pricing</span>
+  <h2 class="section-heading reveal">Simple. No hidden <em>anything.</em></h2>
+  <p class="section-sub reveal" style="text-align:center;margin:12px auto 0">Start free. Upgrade when PhiPrep becomes the edge you can't study without.</p>
+
+  <div class="pricing-grid">
+    <div class="price-card reveal">
+      <div class="price-amount"><span>₹</span>0</div>
+      <div class="price-per">forever free</div>
+      <div class="price-tagline">No card. No tricks.</div>
+      <div class="price-features">
+        <div class="price-feat"><span class="pf-icon">✓</span>5 Math X-Rays per day</div>
+        <div class="price-feat"><span class="pf-icon">✓</span>Basic mistake tracking</div>
+        <div class="price-feat"><span class="pf-icon">✓</span>Concept dependency view</div>
+        <div class="price-feat off"><span class="pf-icon off">✕</span>Persistent mistake memory</div>
+        <div class="price-feat off"><span class="pf-icon off">✕</span>SOS Mode</div>
+        <div class="price-feat off"><span class="pf-icon off">✕</span>Full concept graph</div>
+      </div>
+      <a href="#" class="btn-plan-free">Get started free</a>
+    </div>
+
+    <div class="price-card pro reveal reveal-delay-2">
+      <div class="price-badge">Most popular</div>
+      <div class="price-amount"><span>₹</span>199</div>
+      <div class="price-per">/ month</div>
+      <div class="price-tagline">Less than your coaching notes printout.</div>
+      <div class="price-features">
+        <div class="price-feat"><span class="pf-icon">✓</span>Unlimited Math X-Rays</div>
+        <div class="price-feat"><span class="pf-icon">✓</span>Deep mistake memory (forever)</div>
+        <div class="price-feat"><span class="pf-icon">✓</span>Full concept dependency graph</div>
+        <div class="price-feat"><span class="pf-icon">✓</span>SOS Mode for exam panic</div>
+        <div class="price-feat"><span class="pf-icon">✓</span>Brain Mode — deep reasoning</div>
+        <div class="price-feat"><span class="pf-icon">✓</span>Priority support</div>
+      </div>
+      <a href="#" class="btn-plan-pro">Upgrade to Pro →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── QUOTE ── -->
+<div class="quote-section">
+  <span class="quote-mark reveal">"</span>
+  <p class="quote-text reveal reveal-delay-1">Every JEE topper figured out how to think about new problems. PhiPrep makes that learnable — not just for the lucky few.</p>
+  <div class="quote-src reveal reveal-delay-2">— PhiPrep Mission</div>
+</div>
+
+<!-- ── CTA ── -->
+<section>
+  <div class="cta-section">
+    <div>
+      <h2 class="cta-heading reveal">Your thinking is<br>the <em>real variable.</em></h2>
+      <p class="cta-body reveal reveal-delay-1">12 lakh students write JEE. The ones who think clearly, win. Start rewiring today — it's free.</p>
+      <div class="reveal reveal-delay-2">
+        <a href="#" class="btn-primary" style="display:inline-flex">Start thinking free →</a>
+        <p class="cta-note">No signup friction. Works in 30 seconds.</p>
+      </div>
+    </div>
+    <div class="cta-right reveal reveal-delay-3">
+      <div class="cta-card">
+        <div class="cta-card-title">What changes after 30 days</div>
+        <div class="cta-stats">
+          <div class="cta-stat">
+            <span class="cta-stat-label">Method selection speed</span>
+            <div class="cta-stat-bar"><div class="cta-stat-fill" style="width:86%"></div></div>
+            <span class="cta-stat-val">+86%</span>
+          </div>
+          <div class="cta-stat">
+            <span class="cta-stat-label">Conceptual errors</span>
+            <div class="cta-stat-bar"><div class="cta-stat-fill" style="width:71%;background:linear-gradient(90deg,#7a2010,#c05040)"></div></div>
+            <span class="cta-stat-val">−71%</span>
+          </div>
+          <div class="cta-stat">
+            <span class="cta-stat-label">Pattern recognition</span>
+            <div class="cta-stat-bar"><div class="cta-stat-fill" style="width:94%"></div></div>
+            <span class="cta-stat-val">+94%</span>
+          </div>
+          <div class="cta-stat">
+            <span class="cta-stat-label">SOS escalations</span>
+            <div class="cta-stat-bar"><div class="cta-stat-fill" style="width:60%;background:linear-gradient(90deg,#7a2010,#c05040)"></div></div>
+            <span class="cta-stat-val">−60%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CONTACT ── -->
+<section class="contact-section" id="contact">
+  <div class="contact-inner">
+
+    <div class="contact-left">
+      <span class="contact-tag">Contact us</span>
+      <h2 class="contact-heading">Let's talk.<br><em>We're listening.</em></h2>
+      <p class="contact-sub">Have a question, a partnership idea, or just want to say something? We read every message.</p>
+
+      <div class="response-strip" style="margin-top:24px">
+        <div class="rs-dot"></div>
+        <span class="rs-text"><strong>Typically replies within 24 hours</strong> — we're a small team, but we're fast.</span>
+      </div>
+    </div>
+
+    <div class="contact-cards">
+
+      <!-- Email -->
+      <a href="/cdn-cgi/l/email-protection#8eede1e0faefedfaceede1e9e0e7e8f7a0effefe" class="contact-card email-card reveal">
+        <div class="cc-icon">✉</div>
+        <div class="cc-body">
+          <div class="cc-label">Email us</div>
+          <div class="cc-value"><span class="__cf_email__" data-cfemail="264549485247455266454941484f405f08475656">[email&#160;protected]</span></div>
+          <div class="cc-desc">For general queries, partnerships, and feedback</div>
+        </div>
+        <span class="cc-arrow">→</span>
+      </a>
+
+      <!-- About / Founder -->
+      <div class="contact-card reveal reveal-delay-1" style="cursor:default">
+        <div class="cc-icon">👤</div>
+        <div class="cc-body">
+          <div class="cc-label">Founder</div>
+          <div class="cc-value">Darsh — CEO & Co-founder</div>
+          <div class="cc-desc">Building PhiPrep to make thinking teachable for every JEE aspirant in India</div>
+        </div>
+      </div>
+
+      <!-- About PhiPrep -->
+      <div class="contact-card reveal reveal-delay-2" style="cursor:default">
+        <div class="cc-icon">🧠</div>
+        <div class="cc-body">
+          <div class="cc-label">About PhiPrep</div>
+          <div class="cc-value">The AI Math Thinking Engine</div>
+          <div class="cc-desc">Built specifically for JEE aspirants. Not a doubt solver — a thinking engine that rewires how you approach problems.</div>
+        </div>
+      </div>
+
+      <!-- Coming soon: Twitter -->
+      <div class="contact-card soon reveal reveal-delay-3">
+        <div class="cc-icon">𝕏</div>
+        <div class="cc-body">
+          <div class="cc-label">Twitter / X</div>
+          <div class="cc-value">@phiprepapp</div>
+          <div class="cc-desc">Follow us for updates, JEE tips and launch news</div>
+        </div>
+        <span class="soon-badge">Coming soon</span>
+      </div>
+
+      <!-- Coming soon: Instagram -->
+      <div class="contact-card soon reveal reveal-delay-3">
+        <div class="cc-icon">📸</div>
+        <div class="cc-body">
+          <div class="cc-label">Instagram</div>
+          <div class="cc-value">@phiprep.app</div>
+          <div class="cc-desc">Behind the scenes, student stories and feature drops</div>
+        </div>
+        <span class="soon-badge">Coming soon</span>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+
+<!-- ── FOOTER ── -->
+<footer>
+  <a href="#" class="footer-logo">PhiPrep</a>
+  <span class="footer-copy">© 2025 PhiPrep. Built for JEE aspirants.</span>
+</footer>
+
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+/* ── Custom cursor ── */
+const cursor = document.getElementById('cursor');
+const ring   = document.getElementById('cursorRing');
+let mx = 0, my = 0, rx = 0, ry = 0;
+document.addEventListener('mousemove', e => { mx = e.clientX; my = e.clientY; });
+function animCursor() {
+  cursor.style.left = mx + 'px';
+  cursor.style.top  = my + 'px';
+  rx += (mx - rx) * 0.12;
+  ry += (my - ry) * 0.12;
+  ring.style.left = rx + 'px';
+  ring.style.top  = ry + 'px';
+  requestAnimationFrame(animCursor);
+}
+animCursor();
+
+/* ── Nav scroll effect ── */
+const nav = document.getElementById('nav');
+window.addEventListener('scroll', () => {
+  nav.classList.toggle('scrolled', window.scrollY > 40);
+}, { passive: true });
+
+/* ── Scroll reveal ── */
+const reveals = document.querySelectorAll('.reveal');
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+}, { threshold: 0.12 });
+reveals.forEach(el => io.observe(el));
+
+/* ── Smooth nav links ── */
+document.querySelectorAll('a[href^="#"]').forEach(a => {
+  a.addEventListener('click', e => {
+    const id = a.getAttribute('href');
+    if (id === '#') return;
+    e.preventDefault();
+    document.querySelector(id)?.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+/* ── Hamburger / Mobile drawer ── */
+const hamBtn    = document.getElementById('hamBtn');
+const mobDrawer = document.getElementById('mobDrawer');
+let drawerOpen  = false;
+
+function openDrawer() {
+  drawerOpen = true;
+  hamBtn.classList.add('open');
+  mobDrawer.classList.add('open');
+  mobDrawer.style.display = 'flex';
+}
+function closeDrawer() {
+  drawerOpen = false;
+  hamBtn.classList.remove('open');
+  mobDrawer.classList.remove('open');
+}
+
+hamBtn.addEventListener('click', () => drawerOpen ? closeDrawer() : openDrawer());
+
+// Close drawer on any link click
+mobDrawer.querySelectorAll('a').forEach(a => {
+  a.addEventListener('click', () => closeDrawer());
+});
+
+// Close on outside tap
+document.addEventListener('click', e => {
+  if (drawerOpen && !mobDrawer.contains(e.target) && !hamBtn.contains(e.target)) {
+    closeDrawer();
+  }
+});
+
+// Hide mob CTA bar when scrolled to very top (hero visible)
+const mobCtaBar = document.querySelector('.mob-cta-bar');
+function updateMobBar() {
+  if (mobCtaBar) {
+    mobCtaB

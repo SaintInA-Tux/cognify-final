@@ -1,7 +1,8 @@
 import uuid
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
+from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,11 +10,19 @@ from app.database.db import get_db
 from app.database.models import ChatSession, ChatMessage, Student
 from app.database.schemas import ChatSessionResponse, ChatMessageResponse
 from app.utils.auth_middleware import get_current_user
+from app.utils.rate_limiter import limiter
+
+
+class CreateSessionRequest(BaseModel):
+    title: str = Field(default="New Chat", max_length=255)
+
 
 router = APIRouter(prefix="/chats", tags=["Chats"])
 
 @router.get("", response_model=List[ChatSessionResponse])
+@limiter.limit("60/minute")
 async def list_sessions(
+    request: Request,
     current_user: Student = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -35,11 +44,14 @@ async def list_sessions(
     ]
 
 @router.post("", response_model=ChatSessionResponse)
+@limiter.limit("20/minute")
 async def create_session(
+    request: Request,
+    body: CreateSessionRequest = CreateSessionRequest(),  # BUG-16 FIX: accept title from body
     current_user: Student = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
-    session = ChatSession(student_id=current_user.id, title="New Chat")
+    session = ChatSession(student_id=current_user.id, title=body.title)
     db.add(session)
     await db.commit()
     await db.refresh(session)
@@ -93,3 +105,30 @@ async def delete_session(
     
     await db.delete(session)
     await db.commit()
+
+
+class ChatRenameRequest(BaseModel):
+    title: str
+
+@router.patch("/{session_id}", response_model=ChatSessionResponse)
+async def rename_session(
+    session_id: uuid.UUID,
+    request: ChatRenameRequest,
+    current_user: Student = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(ChatSession).where(ChatSession.id == session_id))
+    session = result.scalar_one_or_none()
+    if not session or session.student_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
+    
+    session.title = request.title
+    await db.commit()
+    await db.refresh(session)
+    
+    return ChatSessionResponse(
+        id=session.id,
+        title=session.title,
+        created_at=session.created_at,
+        updated_at=session.updated_at
+    )

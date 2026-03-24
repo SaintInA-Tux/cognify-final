@@ -1,11 +1,44 @@
 services:
   - type: web
-    name: cognify-api
-    env: python
+    name: phyprep-api
+    runtime: python
     buildCommand: pip install -r requirements.txt
-    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT --proxy-headers --forwarded-allow-ips='*' --workers 2
+    healthCheckPath: /health
     envVars:
-      - key: DEEPSEEK_API_KEY
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: phyprep-db
+          property: connectionString
+      - key: GROQ_API_KEY
         sync: false
+      - key: GROQ_MODEL
+        value: llama-3.3-70b-versatile
       - key: REDIS_URL
         sync: false
+      - key: REDIS_ENABLED
+        value: "false"
+      - key: MATHPIX_APP_ID
+        sync: false
+      - key: MATHPIX_APP_KEY
+        sync: false
+  - type: static
+    name: phyprep-web
+    runtime: node
+    buildCommand: cd vite-project && npm install && npm run build
+    staticPublishPath: vite-project/dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://phyprep-api.onrender.com/v1
+
+databases:
+  - name: phyprep-db
+    plan: free
+    databaseName: phyprep
+    user: phyprep

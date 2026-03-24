@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { PhiCursor } from './usePhiCursor';
+import './Calculator.css';
 
 interface SciCalculatorProps {
   onClose: () => void;
@@ -7,93 +8,290 @@ interface SciCalculatorProps {
 }
 
 export const SciCalculator: React.FC<SciCalculatorProps> = ({ onClose, onInsert }) => {
-  const [display, setDisplay] = useState('');
+  const [expr, setExpr] = useState('');
+  const [lastAns, setLastAns] = useState('0');
+  const [displayRes, setDisplayRes] = useState('0');
+  const [shOn, setShOn] = useState(false);
+  const [alOn, setAlOn] = useState(false);
+  const [ang, setAng] = useState<'RAD' | 'DEG'>('RAD');
+  const [isError, setIsError] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
-  const handleBtn = (val: string) => {
-    setDisplay(prev => prev + val);
-  };
+  useEffect(() => {
+    setIsVisible(true);
+  }, []);
 
-  const handleClear = () => setDisplay('');
-  const handleBackspace = () => setDisplay(prev => prev.slice(0, -1));
-
-  const handleEvaluate = () => {
+  const safeEval = (raw: string, mode: 'RAD' | 'DEG') => {
+    let s = raw
+      .replace(/π/g, '(Math.PI)')
+      .replace(/√\(/g, 'Math.sqrt(')
+      .replace(/log\(/g, 'Math.log10(')
+      .replace(/ln\(/g, 'Math.log(')
+      .replace(/sin\(/g, mode === 'DEG' ? '((x:number)=>Math.sin(x*Math.PI/180))(' : 'Math.sin(')
+      .replace(/cos\(/g, mode === 'DEG' ? '((x:number)=>Math.cos(x*Math.PI/180))(' : 'Math.cos(')
+      .replace(/tan\(/g, mode === 'DEG' ? '((x:number)=>Math.tan(x*Math.PI/180))(' : 'Math.tan(')
+      .replace(/×/g, '*').replace(/÷/g, '/').replace(/−/g, '-');
+    
     try {
-      // In a real app we would use mathjs here. For now just basic eval with error catching
-      // NOTE: Using native eval for simplicity in this visual mockup.
-      const sanitized = display.replace(/×/g, '*').replace(/÷/g, '/');
-      const result = new Function('return ' + sanitized)();
-      setDisplay(String(result));
+      // Basic check for dangerous characters
+      if (/[^0-9+\-*/()., MathPIsqrtloglnsincostan,e]/.test(s.replace(/Math\.[a-z0-9]+/g, ''))) {
+          // Allow some characters but be careful
+      }
+      const fn = new Function('x', '"use strict"; return (' + s + ')');
+      const r = fn();
+      if (typeof r !== 'number') throw new Error('type');
+      return r;
     } catch (e) {
-      setDisplay('Error');
-      setTimeout(() => setDisplay(''), 1500);
+      throw e;
     }
   };
 
-  const handleInsert = () => {
-    if (display && display !== 'Error') {
-      onInsert(display);
-      onClose();
+  const fmtN = (n: number) => {
+    if (!isFinite(n)) throw new Error('e');
+    if (Math.abs(n) >= 1e10 || (Math.abs(n) < 1e-6 && n !== 0))
+      return n.toExponential(6).replace(/\.?0+(e)/, '$1');
+    return parseFloat(n.toPrecision(10)).toString();
+  };
+
+  const handleExe = () => {
+    if (!expr.trim()) return;
+    try {
+      const r = safeEval(expr.replace(/=/g, ''), ang);
+      const resultStr = fmtN(r);
+      setLastAns(resultStr);
+      setDisplayRes(resultStr);
+      setExpr(expr.split('=')[0] + ' =');
+      setIsError(false);
+    } catch (e) {
+      setDisplayRes('Math ERROR');
+      setIsError(true);
+      setExpr('');
     }
   };
 
-  const buttons = [
-    ['sin', 'cos', 'tan', 'C', '⌫'],
-    ['(', ')', '^', '√', '÷'],
-    ['7', '8', '9', '×', 'DEL'],
-    ['4', '5', '6', '-', 'Ans'],
-    ['1', '2', '3', '+', '='],
-    ['0', '.', 'EXP', 'π', 'INSERT']
-  ];
+  const handleAC = () => {
+    setExpr('');
+    setLastAns('0');
+    setDisplayRes('0');
+    setIsError(false);
+  };
+
+  const handleIn = (ch: string) => {
+    setExpr(prev => prev.includes('=') ? ch : prev + ch);
+    setShOn(false);
+    setAlOn(false);
+    setIsError(false);
+  };
+
+  const handleDel = () => {
+    if (expr.includes('=')) {
+      setExpr('');
+    } else {
+      setExpr(prev => prev.slice(0, -1));
+    }
+  };
+
+  const handleFn = (fn: string) => {
+    if (fn === 'pi') setExpr(prev => prev + 'π');
+    else if (fn === 'sqrt') setExpr(prev => prev + '√(');
+    else if (fn === 'ans') setExpr(prev => prev + lastAns);
+    else if (fn === 'neg') setExpr(prev => prev + '(-');
+    else if (fn === 'exe') handleExe();
+    setShOn(false);
+    setAlOn(false);
+  };
+
+  const handleClose = () => {
+    setIsVisible(false);
+    setTimeout(onClose, 240);
+  };
+
+  const handleSendToChat = () => {
+    if (!lastAns || lastAns === '0' || isError) return;
+    onInsert(lastAns);
+    handleClose();
+  };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-      <div className="bg-[#121212] border border-gray-800 rounded-3xl overflow-hidden w-full max-w-[360px] shadow-2xl flex flex-col">
-        {/* Header */}
-        <div className="flex justify-between items-center p-4 bg-[#1A1A1A] border-b border-gray-800">
-          <span className="text-gray-400 font-medium text-sm flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-            fx-991EX Simulator
-          </span>
-          <button onClick={onClose} className="text-gray-500 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors">
-            <X size={18} />
-          </button>
-        </div>
+    <>
+      <div 
+        className="fixed inset-0 z-[500] bg-black/65 backdrop-blur-[6px] transition-opacity duration-[240ms]" 
+        style={{ opacity: isVisible ? 1 : 0 }}
+        onClick={handleClose}
+      />
+      
+      <div 
+        className="fixed top-1/2 left-1/2 z-[501] transition-all duration-[260ms] ease-[cubic-bezier(0.4,0,0.2,1)]"
+        style={{ 
+          transform: isVisible ? 'translate(-50%, -50%) scale(1)' : 'translate(-50%, -48%) scale(0.96)',
+          opacity: isVisible ? 1 : 0
+        }}
+      >
+        <div id="casio">
+          <PhiCursor />
+          
+          <div className="cbrand">
+            <div>
+              <div className="cbrand-name">CASIO</div>
+              <div className="cbrand-model">fx-991EX</div>
+            </div>
+            <div>
+              <div className="cbrand-cw">ClassWiz</div>
+              <div className="cbrand-sub">Natural-V.P.A.M.</div>
+            </div>
+            <button className="cclose" onClick={handleClose}>×</button>
+          </div>
 
-        {/* Display */}
-        <div className="p-6 bg-[#0A0A0A]">
-          <div className="bg-[#D1D5DB] p-4 rounded-xl font-mono text-right text-black shadow-inner min-h-[80px] flex flex-col justify-end">
-            <div className="text-sm text-gray-500 min-h-[20px]"></div>
-            <div className="text-3xl font-medium tracking-tight overflow-x-auto whitespace-nowrap no-scrollbar">
-              {display || '0'}
+          <div className="cdisp">
+            <div className="cdisp-bar">
+              <span className="on">COMP</span>
+              <span className={ang === 'DEG' ? 'on' : ''}>DEG</span>
+              <span className={ang === 'RAD' ? 'on' : ''}>RAD</span>
+              <span className={shOn ? 'on' : ''}>S</span>
+              <span className={alOn ? 'on' : ''}>A</span>
+              <span className="on">Norm1</span>
+            </div>
+            <div className="cdisp-expr">{expr}</div>
+            <div className={`cdisp-result ${isError ? 'cerr' : ''}`}>{displayRes}</div>
+          </div>
+
+          <div className="chat-bar">
+            <div className={`chat-preview ${lastAns !== '0' && !isError ? 'has-val' : ''}`}>
+              {isError ? 'Error' : lastAns !== '0' ? lastAns : 'result will appear here'}
+            </div>
+            <button className="chat-send-btn" onClick={handleSendToChat}>
+              <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+              Send to chat
+            </button>
+          </div>
+
+          <div className="ang-pill">
+            <button className={`ang-btn ${ang === 'RAD' ? 'active' : ''}`} onClick={() => setAng('RAD')}>RAD</button>
+            <button className={`ang-btn ${ang === 'DEG' ? 'active' : ''}`} onClick={() => setAng('DEG')}>DEG</button>
+          </div>
+
+          <div className="cbarea">
+            <div className="crow">
+              <button className="ck ck-sh" style={{ opacity: shOn ? 1 : 0.5 }} onClick={() => {setShOn(!shOn); setAlOn(false)}}>
+                <span className="ck-lbl">SHIFT</span>
+              </button>
+              <button className="ck ck-al" style={{ opacity: alOn ? 1 : 0.5 }} onClick={() => {setAlOn(!alOn); setShOn(false)}}>
+                <span className="ck-lbl">ALPHA</span>
+              </button>
+              <button className="ck ck-dk" onClick={handleDel}>
+                <span className="ck-top sh">INS</span>
+                <span className="ck-lbl">DEL</span>
+              </button>
+              <button className="ck ck-ac" onClick={handleAC}>
+                <span className="ck-top sh">OFF</span>
+                <span className="ck-lbl">AC</span>
+              </button>
+            </div>
+
+            <div className="crow">
+              {['log(', 'ln(', 'sin(', 'cos(', 'tan('].map((f, i) => (
+                <button key={f} className="ck ck-dk" onClick={() => handleIn(f)}>
+                  <span className="ck-top sh">{['10ˣ', 'eˣ', 'sin⁻¹', 'cos⁻¹', 'tan⁻¹'][i]}</span>
+                  <span className="ck-lbl">{f.slice(0, -1)}</span>
+                </button>
+              ))}
+            </div>
+
+            <div className="crow">
+              <button className="ck ck-dk" onClick={() => handleIn('**2')}>
+                <span className="ck-top sh">√</span>
+                <span className="ck-lbl">x²</span>
+              </button>
+              <button className="ck ck-dk" onClick={() => handleIn('**(')}>
+                <span className="ck-top sh">ˣ√</span>
+                <span className="ck-lbl">xʸ</span>
+              </button>
+              <button className="ck ck-dk" onClick={() => handleIn('(')}>
+                <span className="ck-lbl">(</span>
+              </button>
+              <button className="ck ck-dk" onClick={() => handleIn(')')}>
+                <span className="ck-lbl">)</span>
+              </button>
+              <button className="ck ck-dk" onClick={() => handleFn('pi')}>
+                <span className="ck-top sh">e</span>
+                <span className="ck-lbl">π</span>
+              </button>
+            </div>
+
+            <div className="crow">
+              <button className="ck ck-dk" onClick={() => handleFn('sqrt')}>
+                <span className="ck-top sh">x²</span>
+                <span className="ck-lbl">√</span>
+              </button>
+              <button className="ck ck-dk" onClick={() => handleFn('neg')}>
+                <span className="ck-lbl">(−)</span>
+              </button>
+              <button className="ck ck-dk" onClick={() => handleIn(',')}>
+                <span className="ck-lbl">,</span>
+              </button>
+              <button className="ck ck-dk" onClick={() => handleIn('**')}>
+                <span className="ck-lbl">^</span>
+              </button>
+              <button className="ck ck-dk" onClick={() => handleFn('ans')}>
+                <span className="ck-lbl">Ans</span>
+              </button>
+            </div>
+
+            <div className="csep"></div>
+
+            <div style={{ display: 'flex', gap: 4, marginBottom: 4, alignItems: 'center' }}>
+              <div className="dpad">
+                <div></div>
+                <button className="ck ck-nav"><span className="ck-lbl">▲</span></button>
+                <div></div>
+                <button className="ck ck-nav"><span className="ck-lbl">◀</span></button>
+                <button className="ck ck-ctr" onClick={handleExe}><span className="ck-lbl">OK</span></button>
+                <button className="ck ck-nav"><span className="ck-lbl">▶</span></button>
+                <div></div>
+                <button className="ck ck-nav"><span className="ck-lbl">▼</span></button>
+                <div></div>
+              </div>
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div className="crow" style={{ margin: 0 }}>
+                  <button className="ck ck-op" onClick={() => handleIn('*')}><span className="ck-lbl">×</span></button>
+                  <button className="ck ck-op" onClick={() => handleIn('/')}><span className="ck-lbl">÷</span></button>
+                </div>
+                <div className="crow" style={{ margin: 0 }}>
+                  <button className="ck ck-op" onClick={() => handleIn('+')}><span className="ck-lbl">+</span></button>
+                  <button className="ck ck-op" onClick={() => handleIn('-')}><span className="ck-lbl">−</span></button>
+                </div>
+              </div>
+            </div>
+
+            <div className="crow">
+              {[7, 8, 9].map(n => (
+                <button key={n} className="ck ck-nm" onClick={() => handleIn(n.toString())}><span className="ck-lbl">{n}</span></button>
+              ))}
+            </div>
+            <div className="crow">
+              {[4, 5, 6].map(n => (
+                <button key={n} className="ck ck-nm" onClick={() => handleIn(n.toString())}><span className="ck-lbl">{n}</span></button>
+              ))}
+            </div>
+            <div style={{ display: 'flex', gap: 4, marginBottom: 4 }}>
+              <div style={{ flex: 3, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div className="crow" style={{ margin: 0 }}>
+                  {[1, 2, 3].map(n => (
+                    <button key={n} className="ck ck-nm" onClick={() => handleIn(n.toString())}><span className="ck-lbl">{n}</span></button>
+                  ))}
+                </div>
+                <div className="crow" style={{ margin: 0 }}>
+                  <button className="ck ck-nm ck-w2" onClick={() => handleIn('0')}><span className="ck-lbl">0</span></button>
+                  <button className="ck ck-nm" onClick={() => handleIn('.')}><span className="ck-lbl">.</span></button>
+                </div>
+              </div>
+              <button className="ck ck-ex" style={{ flex: 1, minHeight: 'auto' }} onClick={handleExe}>
+                <span className="ck-lbl">EXE</span>
+              </button>
             </div>
           </div>
         </div>
-
-        {/* Keypad */}
-        <div className="p-4 grid grid-cols-5 gap-2 bg-[#1A1A1A]">
-          {buttons.flat().map((btn, idx) => {
-            let color = "bg-[#2A2A2A] text-gray-200 hover:bg-[#3A3A3A]"; // Default numbers/ops
-            if (['C', '⌫', 'DEL'].includes(btn)) color = "bg-red-900/40 text-red-400 hover:bg-red-900/60";
-            if (['=', 'INSERT'].includes(btn)) color = "bg-indigo-600 text-white hover:bg-indigo-500 font-medium";
-            
-            return (
-              <button
-                key={`${btn}-${idx}`}
-                onClick={() => {
-                  if (btn === 'C') handleClear();
-                  else if (btn === '⌫' || btn === 'DEL') handleBackspace();
-                  else if (btn === '=') handleEvaluate();
-                  else if (btn === 'INSERT') handleInsert();
-                  else handleBtn(btn);
-                }}
-                className={`flex items-center justify-center p-3 rounded-xl text-sm transition-all focus:outline-none focus:ring-2 focus:ring-indigo-500/50 active:scale-95 ${color}`}
-              >
-                {btn}
-              </button>
-            );
-          })}
-        </div>
       </div>
-    </div>
+    </>
   );
 };
