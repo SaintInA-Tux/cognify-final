@@ -28,15 +28,6 @@ services:
         sync: false
       - key: MATHPIX_APP_KEY
         sync: false
-  - type: static
-    name: phyprep-web
-    runtime: node
-    buildCommand: cd vite-project && npm install && npm run build
-    staticPublishPath: vite-project/dist
-    envVars:
-      - key: VITE_API_URL
-        value: https://phyprep-api.onrender.com/v1
-
 databases:
   - name: phyprep-db
     plan: free
