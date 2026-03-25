@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import type React from 'react';
-import { Send, X, Menu } from 'lucide-react';
+import { Send, X, Menu, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
@@ -13,6 +13,29 @@ import { useAuth } from '../context/AuthContext';
 import type { ClassificationResult, TopicWeakness } from '../../api';
 
 import { usePhiCursor, PhiCursor } from './usePhiCursor';
+
+// --- Task 1: Smart context switching helpers ---
+type ChatType = 'problem' | 'general';
+
+function isNewProblem(input: string): boolean {
+  const triggers = ['solve', 'find', 'integrate', 'evaluate', 'derive', 'explain'];
+  return triggers.some(t => input.toLowerCase().includes(t));
+}
+
+function isContinuation(input: string): boolean {
+  const continuationWords = ['next', 'then', 'continue', 'after', 'step', 'now', 'again', 'this', 'previous', 'above'];
+  return continuationWords.some(w => input.toLowerCase().includes(w));
+}
+
+// --- Task 4: User-friendly error messages ---
+function getErrorMessage(type: string): string {
+  const map: Record<string, string> = {
+    method_selection: "You're solving a different type of problem.",
+    conceptual: "There's a conceptual mistake in your approach.",
+    calculation: "Check your calculations carefully.",
+  };
+  return map[type] || 'Something seems off. Try again step by step.';
+}
 
 export interface MainChatProps {
   activeChatId?: string | null;
@@ -39,6 +62,8 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick, isSidebarCo
   const [currentStepNumber, setCurrentStepNumber] = useState<number>(1);
   const [previousSteps, setPreviousSteps] = useState<string[]>([]);
   const [revealedHints, setRevealedHints] = useState<Record<number, string>>({});
+  const [showIntel, setShowIntel] = useState(false);
+  const [chatType, setChatType] = useState<ChatType>('general');
   
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -69,16 +94,35 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick, isSidebarCo
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
     if (activeChatId) {
       setIsLoading(true);
       import('../../api').then(({ getChatMessages }) => {
         getChatMessages(activeChatId).then(msgs => {
-          setMessages(msgs.map(m => ({ role: m.role, content: m.content })));
+          if (cancelled) return;
+          if (msgs && msgs.length > 0) {
+            setMessages(msgs.map(m => ({ role: m.role, content: m.content })));
+          } else {
+            // Fallback to localStorage if backend returns empty
+            const saved = localStorage.getItem(`chat_${activeChatId}`);
+            if (saved) {
+              try { setMessages(JSON.parse(saved)); } catch { setMessages([]); }
+            } else {
+              setMessages([]);
+            }
+          }
         }).catch(err => {
+          if (cancelled) return;
           console.error('Failed to load messages', err);
-          setMessages([]);
+          // Fallback to localStorage on API failure
+          const saved = localStorage.getItem(`chat_${activeChatId}`);
+          if (saved) {
+            try { setMessages(JSON.parse(saved)); } catch { setMessages([]); }
+          } else {
+            setMessages([]);
+          }
         }).finally(() => {
-          setIsLoading(false);
+          if (!cancelled) setIsLoading(false);
         });
       });
       // Clear pedagogical state on chat switch
@@ -87,14 +131,55 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick, isSidebarCo
       setActiveAttemptId(null);
       setCurrentStepNumber(1);
       setPreviousSteps([]);
+      setRevealedHints({});
+      setChatType('general');
     }
+    return () => { cancelled = true; };
   }, [activeChatId]);
+
+  // Task 3: Save messages to localStorage whenever they change
+  useEffect(() => {
+    if (activeChatId && messages.length > 0) {
+      localStorage.setItem(`chat_${activeChatId}`, JSON.stringify(messages));
+    }
+  }, [messages, activeChatId]);
 
   const handleSend = async () => {
     if ((!input.trim() && !selectedImage) || isLoading) return;
     
     let userMsg = input.trim();
     if (selectedImage) userMsg = `[Image Uploaded: ${selectedImage.name}]\n` + userMsg;
+
+    // Smart context switching — reset only when a genuinely new problem is detected
+    const isProblem = isNewProblem(userMsg);
+    const continuation = isContinuation(userMsg);
+
+    let isFreshProblem = false;
+
+    if (activeAttemptId) {
+      if (isProblem && !continuation) {
+        setActiveAttemptId(null);
+        setCurrentStepNumber(1);
+        setPreviousSteps([]);
+        setRevealedHints({});
+        setClassification(null);
+        setBrainDetails(null);
+
+        isFreshProblem = true;
+
+        setMessages(prev => [
+          ...prev,
+          {
+            role: "assistant",
+            content: "🧠 Starting a new problem..."
+          }
+        ]);
+      }
+
+      if (chatType !== "problem") setChatType("problem");
+    } else {
+      if (isProblem) setChatType("problem");
+    }
     
     setInput('');
     if (textareaRef.current) {
@@ -120,7 +205,7 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick, isSidebarCo
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
-      if (activeAttemptId) {
+      if (activeAttemptId && !isFreshProblem) {
         const { checkStep } = await import('../../api');
         const data = await checkStep(activeAttemptId, currentStepNumber, userMsg, previousSteps);
         
@@ -129,8 +214,12 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick, isSidebarCo
           setPreviousSteps(prev => [...prev, userMsg]);
           setCurrentStepNumber(prev => prev + 1);
         } else {
-          responseText = `❌ **Incorrect**\n\n**Error Type:** \`${data.error_type || "conceptual"}\`\n\n${data.explanation || ""}`;
-          if (data.corrective_guidance) responseText += `\n\n💡 *Direction:* ${data.corrective_guidance}`;
+          // Task 4: User-friendly error messages
+          const friendlyError = getErrorMessage(data.error_type || "conceptual");
+          responseText = `❌ **Incorrect**\n\n${friendlyError}`;
+          if (data.corrective_guidance) {
+            responseText += `\n\n💡 ${data.corrective_guidance}`;
+          }
           if (data.correct_step) responseText += `\n\n**Correct Step Revealed:**\n\n$$${data.correct_step}$$`;
         }
       } else {
@@ -257,11 +346,21 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick, isSidebarCo
 
           <div style={{ flex: 1 }} />
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <button className="pp-nav-btn">Contact</button>
-            <button className="pp-nav-btn">About</button>
-            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--s3)', border: '1px solid var(--bdrhi)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12.5, fontWeight: 700, color: 'var(--thi)' }}>
-              {profile?.name ? profile.name[0].toUpperCase() : 'G'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button 
+              onClick={() => setShowIntel(!showIntel)} 
+              className={`p-2 rounded-lg transition-all md:hidden ${showIntel ? 'bg-thi text-bg' : 'text-tlo hover:text-thi'}`}
+              title="Show Analysis"
+            >
+              <Zap size={20} fill={showIntel ? "currentColor" : "none"} />
+            </button>
+            <div style={{ width: 1, height: 20, background: 'var(--bdr)', margin: '0 4px' }} className="md:hidden" />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button className="pp-nav-btn">Contact</button>
+              <button className="pp-nav-btn">About</button>
+              <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--s3)', border: '1px solid var(--bdrhi)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12.5, fontWeight: 700, color: 'var(--thi)' }}>
+                {profile?.name ? profile.name[0].toUpperCase() : 'G'}
+              </div>
             </div>
           </div>
         </div>
@@ -360,7 +459,15 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick, isSidebarCo
       </div>
 
       {/* RIGHT: Intelligence Column */}
-      <div className="right-grid">
+      <div className={`right-grid ${showIntel ? 'mobile-open' : ''}`}>
+        {showIntel && (
+          <div className="md:hidden flex items-center justify-between p-4 border-bottom border-bdr" style={{ background: 'var(--card)', borderBottom: '1px solid var(--bdr)' }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--thi)' }}>Phi Intelligence</span>
+            <button onClick={() => setShowIntel(false)} className="p-1 text-tlo">
+              <X size={18} />
+            </button>
+          </div>
+        )}
         
         {/* Card 1: Concept Clarification */}
         <div className="info-card">
@@ -411,21 +518,24 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick, isSidebarCo
           <div className="formula-item">
             <div className="fi-label">TOPIC DEFINITION</div>
             <div className="fi-val">
-              {classification?.definition || (classification ? `${classification.topic}: A core concept in ${classification.subject}.` : 'Knowledge base is idle.')}
+              {classification?.definition ?? (classification
+                ? `${classification.topic}: A core concept in ${classification.subject}.`
+                : 'Knowledge base is idle.')}
             </div>
           </div>
           <div className="formula-item">
             <div className="fi-label">KEY FORMULA</div>
             <div className="fi-val formula scrollable-box">
-              {classification?.formula ? (
-                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {classification.formula}
-                </ReactMarkdown>
-              ) : classification ? (
-                <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
-                  {classification.subject === 'Mathematics' ? '$∫ u \\, dv = uv - ∫ v \\, du$' : classification.subject === 'Physics' ? '$F = ma$' : '$PV = nRT$'}
-                </ReactMarkdown>
-              ) : '—'}
+              <ReactMarkdown remarkPlugins={[remarkMath]} rehypePlugins={[rehypeKatex]}>
+                {classification?.formula ?? (
+                  classification
+                    ? classification.subject === 'Mathematics'
+                      ? '$∫ u \, dv = uv - ∫ v \, du$'
+                      : classification.subject === 'Physics'
+                        ? '$F = ma$'
+                        : '$PV = nRT$'
+                    : '—')}
+              </ReactMarkdown>
             </div>
           </div>
           <div className="formula-item">
