@@ -111,7 +111,7 @@ function ChatLayout() {
             width: 260px !important;
             transform: translateX(${isSidebarOpen ? '0' : '-100%'});
             transition: transform 0.3s ease;
-            z-index: 50 !important;
+            z-index: 1000 !important;
           }
         }
       `}</style>

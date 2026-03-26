@@ -402,7 +402,7 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
 
       {/* Header */}
       <div className="phi-header">
-        <button onClick={onMenuClick} className="phi-header__menu md:hidden">
+        <button onClick={onMenuClick} className="phi-header__menu" aria-label="Open menu">
           <Menu size={20} />
         </button>
 
