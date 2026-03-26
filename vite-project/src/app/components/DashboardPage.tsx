@@ -1,17 +1,60 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Target, AlertTriangle, RefreshCcw } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { 
+  ArrowLeft, 
+  Activity, 
+  TrendingUp, 
+  Zap, 
+  Brain,
+  AlertTriangle,
+  CheckCircle2,
+  Flame,
+  LayoutDashboard,
+  LineChart,
+  Microscope,
+  Lightbulb,
+  ChevronRight
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Chart as ChartJS, 
+  CategoryScale, 
+  LinearScale, 
+  PointElement, 
+  LineElement, 
+  BarElement,
+  Title, 
+  Tooltip, 
+  Legend, 
+  Filler 
+} from 'chart.js';
+import { Line, Bar } from 'react-chartjs-2';
 import { getDashboard } from '../../api';
-import type { DashboardResponse, TopicWeakness } from '../../api';
-import { usePhiCursor, PhiCursor } from './usePhiCursor';
+import type { DashboardResponse } from '../../api';
+import './DashboardPage.css';
+
+// Register ChartJS
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 export function DashboardPage() {
-  usePhiCursor();
   const navigate = useNavigate();
+  const scrollWrapRef = useRef<HTMLDivElement>(null);
   const [data, setData] = useState<DashboardResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [chartType, setChartType] = useState<'line' | 'bar'>('line');
+  const [period, setPeriod] = useState<'7d' | '30d' | '3m' | 'all'>('30d');
+  const [activeMbn, setActiveMbn] = useState(0);
 
   useEffect(() => {
     loadDashboard();
@@ -21,181 +64,288 @@ export function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      // In production we would pass profile?.id, but the backend is fixed for now
-      // so getDashboard() uses a default TEST_STUDENT_ID
       const res = await getDashboard();
       setData(res);
     } catch (err: any) {
-      setError(err.message || "Failed to load dashboard.");
+      setError(err.message || "Failed to load neural telemetry.");
     } finally {
       setLoading(false);
     }
   };
 
-  const renderCard = (topic: TopicWeakness, type: 'red' | 'yellow' | 'green') => {
-    const isRed = type === 'red';
-    const isYellow = type === 'yellow';
+  const scrollToSection = (id: string, idx: number) => {
+    setActiveMbn(idx);
+    const el = document.getElementById(id);
+    if (el && scrollWrapRef.current) {
+      scrollWrapRef.current.scrollTo({
+        top: el.offsetTop - 20,
+        behavior: 'smooth'
+      });
+    }
+  };
 
-    // Theme colors mapping
-    const borderClass = isRed ? "border-pink-500/30" : isYellow ? "border-amber-500/30" : "border-emerald-500/30";
-    const bgClass = isRed ? "bg-pink-500/5 hover:bg-pink-500/10" : isYellow ? "bg-amber-500/5 hover:bg-amber-500/10" : "bg-emerald-500/5 hover:bg-emerald-500/10";
-    const titleColor = isRed ? "text-pink-400" : isYellow ? "text-amber-400" : "text-emerald-400";
-    const barBg = isRed ? "bg-pink-500" : isYellow ? "bg-amber-500" : "bg-emerald-500";
+  const chartData = {
+    labels: data?.performance_trend.map(p => p.label) || [],
+    datasets: [
+      {
+        label: 'Accuracy %',
+        data: data?.performance_trend.map(p => p.accuracy) || [],
+        borderColor: 'rgba(240,240,240,0.9)',
+        backgroundColor: chartType === 'bar' ? 'rgba(240,240,240,0.18)' : 'rgba(240,240,240,0.05)',
+        borderWidth: chartType === 'bar' ? 0 : 2,
+        pointBackgroundColor: 'rgba(240,240,240,1)',
+        pointRadius: chartType === 'bar' ? 0 : 3,
+        tension: 0.45,
+        fill: chartType === 'line',
+      },
+      {
+        label: 'SOS Rate %',
+        data: data?.performance_trend.map(p => p.sos) || [],
+        borderColor: 'rgba(208,80,64,0.8)',
+        backgroundColor: chartType === 'bar' ? 'rgba(208,80,64,0.18)' : 'rgba(208,80,64,0.05)',
+        borderWidth: chartType === 'bar' ? 0 : 2,
+        pointBackgroundColor: 'rgba(208,80,64,1)',
+        pointRadius: chartType === 'bar' ? 0 : 3,
+        tension: 0.45,
+        fill: chartType === 'line',
+      }
+    ]
+  };
 
-    return (
-      <motion.div
-        key={topic.topic}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className={`p-4 rounded-2xl border ${borderClass} ${bgClass} transition-colors duration-300 relative overflow-hidden group`}
-      >
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex flex-col">
-            <span className={`text-[15px] font-bold tracking-tight ${titleColor}`}>{topic.topic}</span>
-            <span className="text-[12.5px] text-[#A1A1AA] uppercase font-medium tracking-wider">{topic.subject}</span>
-          </div>
-          <div className="flex flex-col items-end">
-            <span className={`text-xl font-black ${titleColor}`}>{topic.accuracy_pct}%</span>
-          </div>
-        </div>
-
-        {/* Progress Bar */}
-        <div className="w-full bg-[#000000]/40 rounded-full h-1.5 mb-4 overflow-hidden border border-white/5">
-          <motion.div
-            initial={{ width: 0 }}
-            animate={{ width: `${topic.accuracy_pct}%` }}
-            transition={{ duration: 1, ease: "easeOut" }}
-            className={`h-1.5 rounded-full ${barBg} shadow-[0_0_10px_currentColor]`}
-          />
-        </div>
-
-        <div className="flex justify-between items-center text-[12px] text-[#71717A] bg-[#000000]/20 rounded-lg p-2 border border-white/5">
-          <span className="flex items-center gap-1" title="SOS Usage Rate">
-            <AlertTriangle size={12} className={topic.sos_pct > 20 ? "text-red-400" : ""} /> SOS: {topic.sos_pct}%
-          </span>
-          <span className="flex items-center gap-1" title="Total Attempts">
-            Attempts: {topic.total_attempts}
-          </span>
-        </div>
-      </motion.div>
-    );
+  const chartOptions: any = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        backgroundColor: '#1e1e1e',
+        borderColor: 'rgba(255,255,255,0.12)',
+        borderWidth: 1,
+        titleFont: { size: 10 },
+        bodyFont: { size: 11 },
+      }
+    },
+    scales: {
+      x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#505050', font: { size: 10 } } },
+      y: { min: 0, max: 100, grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#505050', font: { size: 10 }, stepSize: 20 } }
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#000000] text-[#EDEDED] flex flex-col items-center p-4 md:p-8 font-sans overflow-x-hidden selection:bg-pink-500/30" style={{ cursor: 'none' }}>
-      <PhiCursor />
-
-      {/* Premium Background Layer */}
-      <div className="fixed inset-0 z-0 pointer-events-none flex items-center justify-center overflow-hidden">
-        <div className="absolute top-[-10%] right-[-5%] w-[600px] h-[600px] bg-pink-600/[0.04] blur-[150px] rounded-full mix-blend-screen animate-pulse duration-[5000ms]"></div>
-        <div className="absolute bottom-[-10%] left-[-10%] w-[800px] h-[800px] bg-indigo-600/[0.04] blur-[150px] rounded-full mix-blend-screen"></div>
-        <div
-          className="absolute inset-0 opacity-[0.02] mix-blend-overlay"
-          style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")` }}
-        ></div>
-      </div>
-
-      <div className="relative z-10 w-full max-w-[1200px] mt-4">
-
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/10">
-          <div className="flex items-center gap-4">
+    <div className="dashboard-container">
+      {/* NAV */}
+      <nav className="dashboard-nav">
+        <button className="nav-back" onClick={() => navigate(-1)}>
+          <ArrowLeft size={12} /> Chat
+        </button>
+        <span className="nav-logo">Phi<em>Prep</em></span>
+        <span className="nav-tag">Performance</span>
+        <div className="nav-sp" />
+        <div className="nav-period">
+          {['7d', '30d', '3m', 'all'].map(p => (
             <button 
-              onClick={() => navigate(-1)} 
-              className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors group"
+              key={p} 
+              className={`np-btn ${period === p ? 'act' : ''}`}
+              onClick={() => setPeriod(p as any)}
             >
-              <ArrowLeft size={18} className="text-[#A1A1AA] group-hover:text-white transition-colors" />
+              {p.toUpperCase()}
             </button>
-            <div>
-              <h1 className="text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-white to-[#A1A1AA] tracking-tight">Weakness Dashboard</h1>
-              <p className="text-[#71717A] text-sm md:text-base font-medium mt-1">Real-time telemetry on your cognitive performance.</p>
-            </div>
-          </div>
-
-          <button onClick={loadDashboard} className="p-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-colors group" title="Refresh Data">
-            <RefreshCcw size={18} className={`text-[#A1A1AA] group-hover:text-white transition-colors ${loading ? 'animate-spin' : ''}`} />
-          </button>
+          ))}
         </div>
+        <div className="nav-av">D</div>
+      </nav>
 
-        {/* Content */}
-        <AnimatePresence mode="wait">
-          {loading ? (
-            <motion.div key="loading" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex justify-center py-20">
-              <div className="flex flex-col items-center gap-4">
-                <Target size={32} className="text-pink-500 animate-pulse" />
-                <span className="text-[#71717A] font-medium tracking-wide">Syncing neural pathways...</span>
-              </div>
-            </motion.div>
-          ) : error ? (
-            <motion.div key="error" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="p-6 bg-red-500/10 border border-red-500/20 rounded-2xl flex items-center justify-center text-red-400">
-              {error}
-            </motion.div>
-          ) : data ? (
-            <motion.div key="content" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-8">
-
-              {/* Recommendation Banner */}
-              <div className="p-5 md:p-6 bg-gradient-to-r from-pink-500/20 via-purple-500/10 to-transparent border border-pink-500/30 rounded-3xl relative overflow-hidden group shadow-[0_0_40px_rgba(236,72,153,0.1)]">
-                <div className="absolute right-[-20px] top-[-20px] opacity-10 group-hover:opacity-20 transition-opacity duration-700 pointer-events-none transform rotate-12 scale-150">
-                  <Target size={120} />
-                </div>
-                <div className="relative z-10">
-                  <span className="text-[12.5px] uppercase tracking-widest font-bold text-pink-400 mb-2 block">Actionable Insight</span>
-                  <p className="text-lg md:text-xl font-semibold text-white leading-relaxed max-w-[800px]">
-                    {data.recommendation}
-                  </p>
-                </div>
-              </div>
-
-              {/* Grid System */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-
-                {/* Red Column */}
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2 mb-2 px-1">
-                    <div className="w-2.5 h-2.5 rounded-full bg-pink-500 shadow-[0_0_10px_rgba(236,72,153,0.8)]"></div>
-                    <h2 className="text-lg font-bold text-white tracking-tight">Critical Weaknesses</h2>
-                    <span className="ml-auto text-xs text-[#71717A] font-medium">&lt; 50% Accuracy</span>
-                  </div>
-                  {data.weakest_topics.length === 0 ? (
-                    <div className="p-8 rounded-2xl border border-dashed border-white/10 flex items-center justify-center text-[#71717A] text-sm">No critical weaknesses found</div>
-                  ) : (
-                    data.weakest_topics.map(t => renderCard(t, 'red'))
-                  )}
-                </div>
-
-                {/* Yellow Column */}
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2 mb-2 px-1">
-                    <div className="w-2.5 h-2.5 rounded-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.8)]"></div>
-                    <h2 className="text-lg font-bold text-white tracking-tight">Improving Topics</h2>
-                    <span className="ml-auto text-xs text-[#71717A] font-medium">50-74% Accuracy</span>
-                  </div>
-                  {data.improving_topics.length === 0 ? (
-                    <div className="p-8 rounded-2xl border border-dashed border-white/10 flex items-center justify-center text-[#71717A] text-sm">No amber topics</div>
-                  ) : (
-                    data.improving_topics.map(t => renderCard(t, 'yellow'))
-                  )}
-                </div>
-
-                {/* Green Column */}
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2 mb-2 px-1">
-                    <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
-                    <h2 className="text-lg font-bold text-white tracking-tight">Strong Concepts</h2>
-                    <span className="ml-auto text-xs text-[#71717A] font-medium">&gt; 75% Accuracy</span>
-                  </div>
-                  {data.strong_topics.length === 0 ? (
-                    <div className="p-8 rounded-2xl border border-dashed border-white/10 flex items-center justify-center text-[#71717A] text-sm">No green topics yet</div>
-                  ) : (
-                    data.strong_topics.map(t => renderCard(t, 'green'))
-                  )}
-                </div>
-
-              </div>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+      {/* Mobile Period */}
+      <div className="mobile-period">
+        {['7 Days', '30 Days', '3 Months', 'All Time'].map(p => {
+          const val = p.toLowerCase().replace(' ', '') === '7days' ? '7d' : 
+                      p.toLowerCase().replace(' ', '') === '30days' ? '30d' : 
+                      p.toLowerCase().replace(' ', '') === '3months' ? '3m' : 'all';
+          return (
+            <button 
+              key={p} 
+              className={`mp-btn ${period === val ? 'act' : ''}`}
+              onClick={() => setPeriod(val as any)}
+            >
+              {p}
+            </button>
+          );
+        })}
       </div>
+
+      <div className="scroll-wrap" ref={scrollWrapRef}>
+        <div className="max-w-[1200px] mx-auto">
+          <AnimatePresence mode="wait">
+            {loading ? (
+              <motion.div key="loader" className="h-[60vh] flex flex-col items-center justify-center gap-4">
+                <Brain className="animate-pulse text-purple-500" size={48} />
+                <span className="text-[10px] uppercase tracking-[.3em] font-black text-white/40">Syncing Telemetry...</span>
+              </motion.div>
+            ) : error ? (
+              <div className="p-10 text-center"><AlertTriangle className="mx-auto text-red-500 mb-4" />{error}</div>
+            ) : data && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+                
+                {/* Overview */}
+                <div className="section-lbl" id="sec-overview">Overview</div>
+                <div className="grid-top">
+                  <div className="card stat-card">
+                    <div className="stat-top"><div className="stat-icon">📚</div><span className="stat-delta up">+12%</span></div>
+                    <div className="stat-val">{data.total_problems}</div>
+                    <div className="stat-label">Problems attempted</div>
+                    <div className="stat-bar-track"><div className="stat-bar-fill" style={{ width: '70%', background: 'var(--thi)' }} /></div>
+                  </div>
+                  <div className="card stat-card">
+                    <div className="stat-top"><div className="stat-icon"><CheckCircle2 size={16}/></div><span className="stat-delta up">+8%</span></div>
+                    <div className="stat-val">{data.overall_accuracy}%</div>
+                    <div className="stat-label">Overall accuracy</div>
+                    <div className="stat-bar-track"><div className="stat-bar-fill" style={{ width: `${data.overall_accuracy}%`, background: 'var(--thi)' }} /></div>
+                  </div>
+                  <div className="card stat-card">
+                    <div className="stat-top"><div className="stat-icon">🆘</div><span className="stat-delta down">+4%</span></div>
+                    <div className="stat-val">{data.sos_rate}%</div>
+                    <div className="stat-label">SOS rate</div>
+                    <div className="stat-bar-track"><div className="stat-bar-fill" style={{ width: `${data.sos_rate}%`, background: 'var(--red)' }} /></div>
+                  </div>
+                  <div className="card stat-card">
+                    <div className="stat-top"><div className="stat-icon"><Flame size={16}/></div><span className="stat-delta flat">→</span></div>
+                    <div className="stat-val">{data.streak}</div>
+                    <div className="stat-label">Day streak</div>
+                    <div className="stat-bar-track"><div className="stat-bar-fill" style={{ width: '40%', background: 'var(--yel)' }} /></div>
+                  </div>
+                </div>
+
+                {/* Main Trend & Subject Breakdown */}
+                <div className="section-lbl" id="sec-chart">Accuracy Over Time</div>
+                <div className="grid-mid">
+                  <div className="card chart-card">
+                    <div className="card-hd">
+                      <span className="card-title">Performance Trend</span>
+                      <div className="graph-toggle">
+                        <button className={`gt-btn ${chartType === 'line' ? 'act' : ''}`} onClick={() => setChartType('line')}>Line</button>
+                        <button className={`gt-btn ${chartType === 'bar' ? 'act' : ''}`} onClick={() => setChartType('bar')}>Bar</button>
+                      </div>
+                    </div>
+                    <div className="chart-wrap">
+                      {chartType === 'line' ? <Line data={chartData} options={chartOptions} /> : <Bar data={chartData} options={chartOptions} />}
+                    </div>
+                  </div>
+
+                  <div className="card">
+                    <div className="card-hd"><span className="card-title">Subject Accuracy</span></div>
+                    <div className="space-y-1">
+                      {data.subject_breakdown.map(s => (
+                        <div key={s.subject} className="subj-row">
+                          <span className="subj-name">{s.subject}</span>
+                          <div className="subj-bar-wrap"><div className="subj-track"><div className="subj-fill" style={{ width: `${s.accuracy}%`, background: s.accuracy > 70 ? 'var(--thi)' : s.accuracy > 50 ? 'var(--yel)' : 'var(--red)' }} /></div></div>
+                          <span className="subj-pct">{s.accuracy}%</span>
+                          <span className={`subj-status ${s.status === 'green' ? 'g' : s.status === 'yellow' ? 'y' : 'r'}`}>
+                            {s.status === 'green' ? 'Strong' : s.status === 'yellow' ? 'Avg' : 'Weak'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Deep Analysis */}
+                <div className="section-lbl" id="sec-analysis">Deep Analysis</div>
+                <div className="grid-bot">
+                  {/* Weak Areas */}
+                  <div className="card">
+                    <div className="card-hd"><span className="card-title">Weak areas</span></div>
+                    <div className="space-y-3">
+                      {data.weakest_topics.slice(0, 4).map(t => (
+                        <div key={t.topic} className="weak-item">
+                          <div className="weak-header">
+                            <div className="weak-dot r" />
+                            <span className="weak-topic">{t.topic}</span>
+                            <span className="weak-pct">{t.accuracy_pct}%</span>
+                          </div>
+                          <div className="weak-track"><div className="weak-fill r" style={{ width: `${t.accuracy_pct}%` }} /></div>
+                          <div className="weak-tags">
+                            <span className="weak-tag">{t.subject}</span>
+                            <span className="weak-tag">{t.sos_pct}% SOS</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Most Asked & Heatmap */}
+                  <div className="card">
+                    <div className="card-hd"><span className="card-title">Struggle Frequency</span></div>
+                    <div className="space-y-1">
+                      {data.weakest_topics.slice(0, 5).map((t, i) => (
+                        <div key={t.topic} className="freq-item">
+                          <span className="freq-rank">0{i+1}</span>
+                          <span className="freq-name">{t.topic}</span>
+                          <div className="freq-bar-wrap"><div className="freq-track"><div className="freq-fill" style={{ width: '70%' }} /></div></div>
+                          <span className="freq-count">{t.total_attempts}×</span>
+                          <span className="freq-badge hot">High</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-6 pt-4 border-t border-white/5">
+                      <div className="card-title mb-2">SOS Heatmap — 4 weeks</div>
+                      <div className="heat-grid">
+                        {data.sos_heatmap.map((v, i) => (
+                          <div key={i} className={`heat-cell heat-${v}`} title={`${v} SOS requested`} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Error Taxonomy */}
+                  <div className="card">
+                    <div className="card-hd"><span className="card-title">Error Taxonomy</span></div>
+                    <div className="space-y-1">
+                      {data.error_taxonomy.map(e => (
+                        <div key={e.name} className="err-item">
+                          <span className="err-icon">{e.icon}</span>
+                          <div className="err-info">
+                            <div className="err-name">{e.name}</div>
+                            <div className="err-sub">{e.sub}</div>
+                          </div>
+                          <div className="err-bar-wrap"><div className="err-track"><div className="err-fill r" style={{ width: `${e.value}%` }} /></div></div>
+                          <span className="err-count">{e.count}×</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="mt-6 pt-4 border-t border-white/5 space-y-2">
+                       <div className="card-title mb-2">AI Insights</div>
+                       <div className="insight warn">
+                          <span className="ins-icon">⚠</span>
+                          <span className="ins-text">{data.recommendation}</span>
+                       </div>
+                       <div className="insight good">
+                          <span className="ins-icon">✓</span>
+                          <span className="ins-text"><strong>Keep it up!</strong> Your current streak of {data.streak} days shows deep dedication.</span>
+                       </div>
+                    </div>
+                  </div>
+                </div>
+
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Mobile Bottom Nav */}
+      <nav className="mobile-bottom-nav">
+        {[
+          { id: 'sec-overview', label: 'Overview', icon: <LayoutDashboard size={17}/> },
+          { id: 'sec-chart', label: 'Trends', icon: <LineChart size={17}/> },
+          { id: 'sec-analysis', label: 'Analysis', icon: <Microscope size={17}/> },
+          { id: 'sec-overview', label: 'Insights', icon: <Lightbulb size={17}/> }
+        ].map((n, i) => (
+          <button key={i} className={`mbn-btn ${activeMbn === i ? 'act' : ''}`} onClick={() => scrollToSection(n.id, i)}>
+            <span className="mbn-icon">{n.icon}</span>
+            <span className="mbn-label">{n.label}</span>
+          </button>
+        ))}
+      </nav>
     </div>
   );
 }

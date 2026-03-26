@@ -21,8 +21,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import get_settings
 from app.database.db import get_db
 from app.database.models import ProblemAttempt, Student, ChatMessage, ChatSession
-from app.database.schemas import AskRequest, BrainModeResponse, ErrorResponse, DirectAskRequest, SOSModeResponse
-from app.services.reasoning_service import classify_problem, generate_brain_mode
+from app.database.schemas import (
+    AskRequest, 
+    BrainModeResponse, 
+    ErrorResponse, 
+    DirectAskRequest, 
+    SOSModeResponse,
+    GeneralChatRequest,
+    GeneralChatResponse
+)
+from app.services.reasoning_service import classify_problem, generate_brain_mode, generate_general_chat
 from app.services.solution_service import generate_sos_mode
 from app.utils.auth_middleware import get_current_user
 from app.utils.rate_limiter import limiter
@@ -146,6 +154,51 @@ async def ask_image(
         input_method="image",
         db=db,
     )
+
+
+# ---------------------------------------------------------------------------
+# General Chat
+# ---------------------------------------------------------------------------
+
+@router.post(
+    "/ask/general",
+    response_model=GeneralChatResponse,
+    responses={422: {"model": ErrorResponse}, 500: {"model": ErrorResponse}},
+    summary="General chat interaction — returns unstructured direct response",
+    tags=["General Chat"],
+)
+@limiter.limit("20/minute")
+async def ask_general(
+    request: Request,
+    body: GeneralChatRequest,
+    current_user: Student = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> GeneralChatResponse:
+    try:
+        content = await generate_general_chat(body.message)
+    except Exception as exc:
+        logger.error("General chat generation failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="General chat service temporarily unavailable.",
+        )
+
+    if body.session_id:
+        await _validate_session_ownership(body.session_id, current_user.id, db)
+        
+        user_msg = ChatMessage(session_id=body.session_id, role="user", content=body.message, mode="general")
+        asst_msg = ChatMessage(session_id=body.session_id, role="assistant", content=content, mode="general")
+        db.add_all([user_msg, asst_msg])
+
+        # Update session updated_at
+        sess_result = await db.execute(select(ChatSession).where(ChatSession.id == body.session_id))
+        chat_session = sess_result.scalar_one_or_none()
+        if chat_session:
+            chat_session.updated_at = datetime.now(timezone.utc)
+        
+        await db.commit()
+
+    return GeneralChatResponse(content=content, session_id=body.session_id)
 
 
 # ---------------------------------------------------------------------------

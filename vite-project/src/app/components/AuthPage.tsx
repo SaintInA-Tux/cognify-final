@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginGuest } from '../../api';
 import { useAuth } from '../context/AuthContext';
-import { usePhiCursor, PhiCursor } from './usePhiCursor';
 
 export default function AuthPage() {
-  usePhiCursor();
   const navigate = useNavigate();
   const { login } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -28,7 +26,6 @@ export default function AuthPage() {
 
   return (
     <div className="auth-page" style={{ height: '100vh', background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif", display: 'flex', overflow: 'hidden' }}>
-      <PhiCursor />
 
       {/* LEFT PANEL */}
       <div className="auth-left" style={{ width: '100%', maxWidth: 420, flexShrink: 0, background: 'var(--s1)', borderRight: '1px solid var(--bdr)', display: 'flex', flexDirection: 'column', overflowY: 'auto', scrollbarWidth: 'none' }}>
@@ -63,7 +60,7 @@ export default function AuthPage() {
               color: loading ? 'var(--tlo)' : 'var(--bg)',
               border: 'none', borderRadius: 10,
               fontFamily: "'Jost', sans-serif", fontSize: 13.5, fontWeight: 700,
-              letterSpacing: '.04em', cursor: loading ? 'not-allowed' : 'none',
+              letterSpacing: '.04em',
               transition: 'all .2s', marginBottom: 12,
               position: 'relative', overflow: 'hidden',
             }}

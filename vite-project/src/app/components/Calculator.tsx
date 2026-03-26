@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { PhiCursor } from './usePhiCursor';
+
 import './Calculator.css';
 
 interface SciCalculatorProps {
@@ -128,7 +128,7 @@ export const SciCalculator: React.FC<SciCalculatorProps> = ({ onClose, onInsert 
         }}
       >
         <div id="casio">
-          <PhiCursor />
+
           
           <div className="cbrand">
             <div>

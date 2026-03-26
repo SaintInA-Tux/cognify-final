@@ -22,7 +22,7 @@ from app.cache.redis_client import cache_get, cache_set
 from app.config import get_settings
 from app.database.schemas import BrainModeResponse, ClassificationResult
 from app.services.llm_service import call_deepseek
-from app.utils.prompt_templates import BRAIN_MODE_PROMPT, CLASSIFICATION_PROMPT
+from app.utils.prompt_templates import BRAIN_MODE_PROMPT, CLASSIFICATION_PROMPT, GENERAL_CHAT_PROMPT
 from app.utils.response_parser import parse_brain_mode_response, parse_llm_response
 
 logger = logging.getLogger(__name__)
@@ -75,11 +75,12 @@ async def classify_problem(problem: str) -> ClassificationResult:
 # ---------------------------------------------------------------------------
 
 class _BrainModeRaw(BaseModel):
-    """Internal parse target — exactly the four fields Brain Mode must return."""
+    """Internal parse target — exactly the fields Brain Mode must return."""
     pattern: str
     method: str
     setup: str
     first_step: str
+    variables: list[str] | None = None
 
 
 async def generate_brain_mode(
@@ -121,5 +122,20 @@ async def generate_brain_mode(
         method=parsed.method,
         setup=parsed.setup,
         first_step=parsed.first_step,
+        variables=parsed.variables,
         answer_withheld=True,  # Always True — structural enforcement, not a suggestion
     )
+
+
+async def generate_general_chat(message: str) -> str:
+    """
+    Generate a direct, unstructured response for General Mode.
+    No JSON parsing needed — returns raw text/markdown from LLM.
+    """
+    content = await call_deepseek(
+        prompt=GENERAL_CHAT_PROMPT.format(message=message),
+        max_tokens=2048,
+        temperature=0.7,  # Slightly higher for more natural conversation
+        model=settings.deepseek_model,
+    )
+    return content.strip()

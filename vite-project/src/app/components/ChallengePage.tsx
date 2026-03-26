@@ -1,16 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getTodayChallenge, submitChallenge } from '../../api';
 import type { ChallengeProblemResponse, ChallengeSubmitResponse } from '../../api';
 import { useAuth } from '../context/AuthContext';
-import { usePhiCursor, PhiCursor } from './usePhiCursor';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
 import 'katex/dist/katex.min.css';
 
 export default function ChallengePage() {
-  usePhiCursor();
   const navigate = useNavigate();
   const { profile } = useAuth();
   const [challenge, setChallenge] = useState<ChallengeProblemResponse | null>(null);
@@ -81,8 +79,7 @@ export default function ChallengePage() {
   const initials = (name: string) => name.substring(0, 2).toUpperCase();
 
   return (
-    <div style={{ height: '100vh', background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden', cursor: 'none' }}>
-      <PhiCursor />
+    <div style={{ height: '100vh', background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
       {/* Nav */}
       <nav style={{ height: 50, background: 'rgba(10,10,10,.97)', borderBottom: '1px solid var(--bdr)', display: 'flex', alignItems: 'center', padding: '0 20px', gap: 12, flexShrink: 0, zIndex: 10 }}>
@@ -91,7 +88,7 @@ export default function ChallengePage() {
           Phi<em style={{ color: 'var(--tmd)', fontStyle: 'italic' }}>Prep</em>
         </div>
         <div style={{ flex: 1 }} />
-        <button onClick={() => navigate('/chat')} style={{ background: 'none', border: '1px solid var(--bdr)', color: 'var(--tlo)', fontFamily: "'Jost', sans-serif", fontSize: 12.5, padding: '5px 12px', borderRadius: 20, cursor: 'none', transition: 'all .2s' }}>← Back to chat</button>
+          <button onClick={() => navigate('/chat')} style={{ background: 'none', border: '1px solid var(--bdr)', color: 'var(--tlo)', fontFamily: "'Jost', sans-serif", fontSize: 12.5, padding: '5px 12px', borderRadius: 20, transition: 'all .2s' }}>← Back to chat</button>
         <div style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--s4)', border: '1px solid var(--bdrhi)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700 }}>
           {profile?.name ? initials(profile.name) : 'G'}
         </div>
@@ -228,7 +225,7 @@ export default function ChallengePage() {
                       {result.explanation}
                     </ReactMarkdown>
                   </div>
-                  <button onClick={() => navigate('/chat')} style={{ marginTop: 16, padding: '9px 20px', background: 'var(--s3)', border: '1px solid var(--bdrhi)', borderRadius: 10, color: 'var(--tmd)', fontFamily: "'Jost', sans-serif", fontSize: 12.5, cursor: 'none', transition: 'all .2s' }}>
+                  <button onClick={() => navigate('/chat')} style={{ marginTop: 16, padding: '9px 20px', background: 'var(--s3)', border: '1px solid var(--bdrhi)', borderRadius: 10, color: 'var(--tmd)', fontFamily: "'Jost', sans-serif", fontSize: 12.5, transition: 'all .2s' }}>
                     Try a problem in Brain Mode →
                   </button>
                 </div>

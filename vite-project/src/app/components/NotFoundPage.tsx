@@ -1,6 +1,4 @@
-import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { usePhiCursor, PhiCursor } from './usePhiCursor';
 
 const mathFloats = [
   { text: '∫ eˣ dx', top: '8%', left: '6%', dur: 14 },
@@ -13,12 +11,10 @@ const mathFloats = [
 ];
 
 export default function NotFoundPage() {
-  usePhiCursor();
   const navigate = useNavigate();
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', cursor: 'none' }}>
-      <PhiCursor />
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative' }}>
 
       {/* Grid background */}
       <div style={{ position: 'fixed', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px)', backgroundSize: '48px 48px', pointerEvents: 'none', zIndex: 0 }} />
@@ -38,7 +34,7 @@ export default function NotFoundPage() {
 
       {/* Nav */}
       <nav style={{ position: 'relative', zIndex: 2, height: 50, display: 'flex', alignItems: 'center', padding: '0 24px', borderBottom: '1px solid var(--bdr)' }}>
-        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: 'var(--thi)', letterSpacing: '.03em', display: 'flex', alignItems: 'center', gap: 8, cursor: 'none' }} onClick={() => navigate('/')}>
+        <div style={{ fontFamily: "'Cormorant Garamond', serif", fontSize: 20, fontWeight: 600, color: 'var(--thi)', letterSpacing: '.03em', display: 'flex', alignItems: 'center', gap: 8 }} onClick={() => navigate('/')}>
           <div style={{ width: 26, height: 26, borderRadius: 7, background: 'var(--thi)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: 'var(--bg)', fontFamily: "'Cormorant Garamond', serif", fontWeight: 600 }}>Φ</div>
           Phi<em style={{ color: 'var(--tmd)', fontStyle: 'italic' }}>Prep</em>
         </div>
@@ -109,10 +105,10 @@ export default function NotFoundPage() {
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
-          <button onClick={() => navigate('/chat')} style={{ padding: '11px 24px', background: 'var(--thi)', color: 'var(--bg)', border: 'none', borderRadius: 10, fontFamily: "'Jost', sans-serif", fontSize: 13, fontWeight: 700, cursor: 'none', transition: 'all .2s', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+          <button onClick={() => navigate('/chat')} style={{ padding: '11px 24px', background: 'var(--thi)', color: 'var(--bg)', border: 'none', borderRadius: 10, fontFamily: "'Jost', sans-serif", fontSize: 13, fontWeight: 700, transition: 'all .2s', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
             Φ Go home →
           </button>
-          <button onClick={() => window.history.back()} style={{ padding: '11px 24px', background: 'transparent', color: 'var(--tmd)', border: '1px solid var(--bdr)', borderRadius: 10, fontFamily: "'Jost', sans-serif", fontSize: 13, cursor: 'none', transition: 'all .2s', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
+          <button onClick={() => window.history.back()} style={{ padding: '11px 24px', background: 'transparent', color: 'var(--tmd)', border: '1px solid var(--bdr)', borderRadius: 10, fontFamily: "'Jost', sans-serif", fontSize: 13, transition: 'all .2s', display: 'inline-flex', alignItems: 'center', gap: 7 }}>
             ← Go back
           </button>
         </div>
