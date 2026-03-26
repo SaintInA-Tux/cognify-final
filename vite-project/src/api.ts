@@ -22,6 +22,7 @@ export interface BrainModeResponse {
   setup: string;
   first_step: string;
   answer_withheld: boolean;
+  variables?: string[] | null;
 }
 
 export interface StepCheckResponse {
@@ -69,6 +70,7 @@ export interface StudentProfile {
   level: string | null;
   exam_board: string | null;
   target_exam: string | null;
+  target_year: string | null;
   daily_goal: number;       // NEW
   streak: number;           // NEW: consecutive days solved
   onboarded: boolean;       // NEW — frontend uses this to decide whether to show onboarding
@@ -251,6 +253,7 @@ export async function updateProfile(data: {
   level?: string;
   exam_board?: string;
   target_exam?: string;
+  target_year?: string;
   daily_goal?: number;
   onboarded?: boolean;
 }): Promise<StudentProfile> {
@@ -287,6 +290,21 @@ export async function askDirect(
     method: "POST",
     body: JSON.stringify({
       problem,
+      session_id: sessionId || null,
+    }),
+    signal,
+  });
+}
+
+export async function askGeneral(
+  message: string,
+  sessionId?: string,
+  signal?: AbortSignal
+): Promise<{ content: string; session_id?: string }> {
+  return apiFetch(`${BASE_URL}/ask/general`, {
+    method: "POST",
+    body: JSON.stringify({
+      message,
       session_id: sessionId || null,
     }),
     signal,

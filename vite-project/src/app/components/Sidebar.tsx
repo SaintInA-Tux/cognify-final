@@ -239,8 +239,10 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
           </div>
           {!collapsed && (
             <div style={{ overflow: 'hidden', flex: 1 }}>
-              <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--thi)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile?.name || 'Darsh'}</div>
-              <div style={{ fontSize: 11.5, color: 'var(--tlo)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>JEE Advanced - 2026</div>
+              <div style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--thi)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{profile?.name || 'Guest'}</div>
+              <div style={{ fontSize: 11.5, color: 'var(--tlo)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {profile?.target_exam || 'JEE Advanced'} - {profile?.target_year || '2026'}
+              </div>
             </div>
           )}
         </div>
@@ -271,8 +273,8 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
       </div>
 
       <style>{`
-        button.group:hover .chat-actions { opacity: 1!important; }
-        @media(max-width:480px){ body { cursor: auto!important; } }
+        button.group:hover .chat-actions { opacity: 1!important; pointer-events: auto!important; }
+        @media(max-width:480px){ .sidebar-container { display: none!important; } }
       `}</style>
     </div>
   );

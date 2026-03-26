@@ -1,8 +1,7 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { updateProfile } from '../../api';
 import { useAuth } from '../context/AuthContext';
-import { usePhiCursor, PhiCursor } from './usePhiCursor';
 
 interface OnboardingData {
   level: string;
@@ -15,9 +14,8 @@ interface OnboardingData {
 const TOTAL_SCREENS = 5;
 
 export default function OnboardingFlow() {
-  usePhiCursor();
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { login } = useAuth(); // or just useAuth() if nothing else needed
   const [step, setStep] = useState(0);
   const [exiting, setExiting] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -40,6 +38,7 @@ export default function OnboardingFlow() {
           level: data.level || 'Class 12',
           exam_board: 'CBSE',
           target_exam: data.exam === 'jee-main' ? 'JEE Main' : data.exam === 'jee-adv' ? 'JEE Advanced' : data.exam === 'neet' ? 'NEET' : 'JEE Main',
+          target_year: data.year || '2026',
           daily_goal: data.daily_goal,
           onboarded: true,
         });
@@ -94,7 +93,7 @@ export default function OnboardingFlow() {
           background: selected ? 'rgba(255,255,255,0.06)' : 'var(--s2)',
           border: `1px solid ${selected ? 'var(--bdr2)' : 'var(--bdr)'}`,
           borderRadius: 14, padding: '16px 12px',
-          cursor: 'none', transition: 'all .22s',
+          transition: 'all .22s',
           display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8,
           userSelect: 'none', position: 'relative', overflow: 'hidden',
         }}
@@ -121,7 +120,7 @@ export default function OnboardingFlow() {
         padding: '11px 18px', borderRadius: 40,
         border: `1px solid ${selected ? 'var(--bdr2)' : 'var(--bdr)'}`,
         background: selected ? 'rgba(255,255,255,0.07)' : 'var(--s2)',
-        cursor: 'none', transition: 'all .2s', userSelect: 'none',
+        transition: 'all .2s', userSelect: 'none',
       }}>
         <span style={{ fontSize: 16 }}>{icon}</span>
         <span style={{ fontSize: 13.5, fontWeight: 500, color: selected ? 'var(--thi)' : 'var(--tmd)' }}>{label}</span>
@@ -151,8 +150,7 @@ export default function OnboardingFlow() {
   );
 
   return (
-    <div style={{ height: '100vh', background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden', cursor: 'none' }}>
-      <PhiCursor />
+    <div style={{ height: '100vh', background: 'var(--bg)', color: 'var(--thi)', fontFamily: "'Jost', sans-serif", display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
       {/* Progress bar */}
       <div style={{ height: 2, background: 'var(--s3)', flexShrink: 0, position: 'relative', overflow: 'hidden' }}>
@@ -168,7 +166,7 @@ export default function OnboardingFlow() {
           Phi<em style={{ color: 'var(--tmd)', fontStyle: 'italic' }}>Prep</em>
         </div>
         <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 12.5, color: 'var(--tlo)', letterSpacing: '.06em' }}>{stepLabels[Math.min(step, stepLabels.length - 1)]}</div>
-        {step < 4 && <button onClick={skip} style={{ fontSize: 12, color: 'var(--tlo)', background: 'none', border: 'none', fontFamily: "'Jost', sans-serif", cursor: 'none', transition: 'color .2s', padding: '4px 0' }}>Skip for now</button>}
+        {step < 4 && <button onClick={skip} style={{ fontSize: 12, color: 'var(--tlo)', background: 'none', border: 'none', fontFamily: "'Jost', sans-serif", transition: 'color .2s', padding: '4px 0' }}>Skip for now</button>}
         {step >= 4 && <div style={{ width: 80 }} />}
       </div>
 
@@ -246,7 +244,7 @@ export default function OnboardingFlow() {
                 <input
                   type="range" min={1} max={30} value={data.daily_goal}
                   onChange={e => setData(d => ({ ...d, daily_goal: parseInt(e.target.value) }))}
-                  style={{ width: '100%', height: 4, borderRadius: 2, background: 'var(--s5)', outline: 'none', cursor: 'none', appearance: 'none', WebkitAppearance: 'none', marginBottom: 16 }}
+                  style={{ width: '100%', height: 4, borderRadius: 2, background: 'var(--s5)', outline: 'none', appearance: 'none', WebkitAppearance: 'none', marginBottom: 16 }}
                 />
                 <div style={{ fontSize: 12, color: 'var(--tlo)', textAlign: 'center' }}>{goalDescs[closestGoalKey]}</div>
               </div>
@@ -282,7 +280,7 @@ export default function OnboardingFlow() {
             width: 44, height: 44, borderRadius: 10,
             background: 'var(--s2)', border: '1px solid var(--bdr)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 16, cursor: 'none', flexShrink: 0,
+            fontSize: 16, flexShrink: 0,
             transition: 'all .2s', color: 'var(--thi)',
             opacity: step === 0 ? 0 : 1, pointerEvents: step === 0 ? 'none' : 'all',
           }}
@@ -296,8 +294,7 @@ export default function OnboardingFlow() {
             color: saving ? 'var(--tlo)' : 'var(--bg)',
             border: 'none', borderRadius: 10,
             fontFamily: "'Jost', sans-serif", fontSize: 13.5, fontWeight: 700,
-            letterSpacing: '.04em', cursor: saving ? 'not-allowed' : 'none',
-            transition: 'all .2s',
+            letterSpacing: '.04em', transition: 'all .2s',
           }}
         >
           {saving ? 'Saving…' : step >= TOTAL_SCREENS - 1 ? 'Start learning →' : 'Continue →'}

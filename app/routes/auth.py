@@ -61,6 +61,7 @@ async def guest_login(
         level="Class 12",
         exam_board="CBSE",
         target_exam="JEE Main",
+        target_year="2026",
         is_guest=True,
         onboarded=False,
     )
@@ -148,6 +149,7 @@ async def get_me(current_user: Student = Depends(get_current_user)):
         level=current_user.level,
         exam_board=current_user.exam_board,
         target_exam=current_user.target_exam,
+        target_year=current_user.target_year,
         daily_goal=current_user.daily_goal,
         onboarded=current_user.onboarded,
         is_guest=current_user.is_guest,
@@ -163,6 +165,7 @@ class UpdateProfileRequest(BaseModel):
     level: str | None = None
     exam_board: str | None = None
     target_exam: str | None = None
+    target_year: str | None = None
     daily_goal: int | None = Field(None, ge=1, le=50)
     onboarded: bool | None = None
 
@@ -192,6 +195,7 @@ async def update_profile(
         level=current_user.level,
         exam_board=current_user.exam_board,
         target_exam=current_user.target_exam,
+        target_year=current_user.target_year,
         daily_goal=current_user.daily_goal,
         onboarded=current_user.onboarded,
         is_guest=current_user.is_guest,

@@ -60,6 +60,8 @@ async def _ensure_students_schema(conn) -> None:
         missing_columns.append("daily_goal INTEGER NOT NULL DEFAULT 5")
     if "streak" not in existing_cols:
         missing_columns.append("streak INTEGER NOT NULL DEFAULT 0")
+    if "target_year" not in existing_cols:
+        missing_columns.append("target_year VARCHAR(10) DEFAULT '2026'")
 
     for col_def in missing_columns:
         await conn.execute(text(f"ALTER TABLE students ADD COLUMN {col_def}"))

@@ -69,6 +69,7 @@ class Student(Base):
     level: Mapped[str] = mapped_column(String(100), nullable=True)       # e.g. "Class 12"
     exam_board: Mapped[str] = mapped_column(String(100), nullable=True)  # ISC, CBSE
     target_exam: Mapped[str] = mapped_column(String(100), nullable=True) # JEE Main, JEE Advanced, NEET
+    target_year: Mapped[str] = mapped_column(String(10), nullable=True)  # e.g. "2026"
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
 
     # NEW fields for prototype
@@ -145,7 +146,7 @@ class ProblemAttempt(Base):
     topic: Mapped[str | None] = mapped_column(String(100))
     subtopic: Mapped[str | None] = mapped_column(String(100))
     difficulty: Mapped[str | None] = mapped_column(
-        Enum("easy", "medium", "hard", "jee_advanced", name="difficulty_enum")
+        Enum("easy", "medium", "hard", "jee_advanced", "Unknown", name="difficulty_enum")
     )
     pattern: Mapped[str | None] = mapped_column(String(255))
 
