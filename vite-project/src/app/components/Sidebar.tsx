@@ -3,7 +3,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { MessageSquare, Plus, Loader2, Trash2, LogOut, Edit2, Check, Zap, Menu, Target, Settings, Trophy } from 'lucide-react';
 import { getChats, deleteChat, renameChat, createChat } from '../../api';
 import { useAuth } from '../context/AuthContext';
+import { ConfirmModal } from './ConfirmModal';
 import type { ChatSession } from '../../api';
+import { saveLastChatId } from '../localStore';
 
 interface SidebarProps {
   activeChatId?: string | null;
@@ -21,10 +23,33 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
   const [loading, setLoading] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [logoutPending, setLogoutPending] = useState(false);
+
+  // Helper to format date strings correctly to local time
+  const formatTime = (dateStr: string | null) => {
+    if (!dateStr) return '';
+    try {
+      // Ensure the string has a 'T' instead of space and ends with 'Z' for UTC parsing
+      let normalized = dateStr;
+      if (!normalized.includes('T')) normalized = normalized.replace(' ', 'T');
+      if (!normalized.endsWith('Z') && !normalized.includes('+')) normalized += 'Z';
+      
+      const date = new Date(normalized);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      return '';
+    }
+  };
 
   useEffect(() => {
     fetchChats();
   }, [refreshTrigger]);
+
+  // Save last active chat ID whenever it changes
+  useEffect(() => {
+    saveLastChatId(activeChatId || null);
+  }, [activeChatId]);
 
   const fetchChats = async () => {
     setLoading(true);
@@ -40,6 +65,18 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
 
   const handleNewChat = async () => {
     try {
+      // Find an empty/new chat to reuse if possible
+      const emptyChat = chats.find(c => 
+        c.title === 'New Conversation' || 
+        c.title === 'New Session' || 
+        c.title === ''
+      );
+
+      if (emptyChat) {
+        if (onSelectChat) onSelectChat(emptyChat.id);
+        return;
+      }
+
       const newChat = await createChat('New Conversation');
       setChats(prev => [newChat, ...prev]);
       if (onSelectChat) onSelectChat(newChat.id);
@@ -48,11 +85,20 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
     }
   };
 
-  const handleDelete = async (e: React.MouseEvent, id: string) => {
+  const handleDeleteClick = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
-    if (!confirm('Delete this chat?')) return;
+    setDeletingId(id);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingId) return;
+    const id = deletingId;
+    setDeletingId(null);
     setChats(prev => prev.filter(c => c.id !== id));
-    if (activeChatId === id && onNewChat) onNewChat();
+    if (activeChatId === id) {
+      saveLastChatId(null);
+      if (onNewChat) onNewChat();
+    }
     try {
       await deleteChat(id);
     } catch (err) {
@@ -121,6 +167,27 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
       }}
     >
 
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        open={!!deletingId}
+        title="Delete Chat"
+        message="Are you sure you want to delete this chat?"
+        confirmLabel="Delete"
+        onConfirm={handleDeleteConfirm}
+        onCancel={() => setDeletingId(null)}
+      />
+
+      {/* Logout Confirmation Modal */}
+      <ConfirmModal
+        open={logoutPending}
+        title="Log Out"
+        message="Are you sure you want to log out?"
+        confirmLabel="Log Out"
+        destructive={false}
+        onConfirm={() => { setLogoutPending(false); logout(); navigate('/'); }}
+        onCancel={() => setLogoutPending(false)}
+      />
+
       {/* Brand & Toggle */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, padding: '4px 0' }}>
         <button
@@ -177,7 +244,7 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
                       onClick={() => onSelectChat && onSelectChat(chat.id)}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 10,
-                        padding: '10px 12px', borderRadius: 12, fontSize: 12.5, /* Increased from 11/13 */
+                        padding: '10px 12px', borderRadius: 12, fontSize: 12.5,
                         textAlign: 'left', width: '100%', cursor: 'pointer',
                         transition: 'all .2s', marginBottom: 4,
                         background: isActive ? 'rgba(255,255,255,.08)' : 'transparent',
@@ -200,19 +267,19 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
                           </div>
                         ) : (
                           <>
-                            <div style={{ flex: 1, overflow: 'hidden' }}>
-                              <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12.5, fontWeight: isActive ? 600 : 500 }}>
-                                {chat.title || 'New Session'}
-                              </div>
-                              <div style={{ fontSize: 11.5, color: 'var(--tlo)', marginTop: 2 }}>{new Date(chat.updated_at || chat.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
-                            </div>
+                             <div style={{ flex: 1, overflow: 'hidden' }}>
+                               <div style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: 12.5, fontWeight: isActive ? 600 : 500 }}>
+                                 {chat.title || 'New Session'}
+                               </div>
+                               <div style={{ fontSize: 11.5, color: 'var(--tlo)', marginTop: 2 }}>{formatTime(chat.updated_at || chat.created_at)}</div>
+                             </div>
                             <div style={{ display: 'flex', alignItems: 'center', opacity: 0, transition: 'opacity .2s' }} className="chat-actions">
                               <button
                                 onClick={e => { e.stopPropagation(); setEditingId(chat.id); setEditTitle(chat.title || ''); }}
                                 style={{ padding: 4, color: 'var(--tlo)', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 5, transition: 'color .15s' }}
                               ><Edit2 size={12} /></button>
                               <button
-                                onClick={e => handleDelete(e, chat.id)}
+                                onClick={e => handleDeleteClick(e, chat.id)}
                                 style={{ padding: 4, color: 'var(--tlo)', background: 'none', border: 'none', cursor: 'pointer', borderRadius: 5, transition: 'color .15s' }}
                               ><Trash2 size={12} /></button>
                             </div>
@@ -247,7 +314,7 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
           )}
         </div>
 
-        {/* Navigation links - with increased font sizes */}
+        {/* Navigation links */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 8 }}>
           <Link to="/challenge" style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'var(--gold)', textDecoration: 'none', fontSize: 12.5, width: '100%', background: 'rgba(255,149,0,0.08)', border: '1px solid rgba(255,149,0,0.15)', transition: 'all .2s', fontFamily: "'Jost', sans-serif" }} title="Daily Challenge">
             <Trophy size={16} />
@@ -262,7 +329,7 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
             {!collapsed && <span>Settings</span>}
           </Link>
           <button
-            onClick={() => { if (confirm('Log out?')) { logout(); navigate('/'); } }}
+            onClick={() => setLogoutPending(true)}
             style={{ display: 'flex', alignItems: 'center', justifyContent: collapsed ? 'center' : 'flex-start', gap: 10, padding: '10px 12px', borderRadius: 10, color: 'var(--tlo)', fontSize: 12.5, width: '100%', background: 'none', border: 'none', cursor: 'pointer', transition: 'all .2s', fontFamily: "'Jost', sans-serif" }}
             title="Log out"
           >
@@ -274,7 +341,6 @@ export function Sidebar({ activeChatId, refreshTrigger, collapsed, onSelectChat,
 
       <style>{`
         button.group:hover .chat-actions { opacity: 1!important; pointer-events: auto!important; }
-        @media(max-width:480px){ .sidebar-container { display: none!important; } }
       `}</style>
     </div>
   );

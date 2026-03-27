@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { getMe } from '../../api';
 import type { StudentProfile } from '../../api';
+import { clearUserData } from '../localStore';
 
 interface AuthContextType {
   token: string | null;
@@ -75,6 +76,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   };
 
   const logout = () => {
+    clearUserData();
     setToken(null);
     setStudentId(null);
     setProfile(null);

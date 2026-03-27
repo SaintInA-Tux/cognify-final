@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'motion/react';
-import { ChevronDown, Check, X, Lightbulb, Lock, RotateCcw } from 'lucide-react';
+import { ChevronDown, Check, X, Lightbulb, Lock, RotateCcw, SkipForward } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkMath from 'remark-math';
 import rehypeKatex from 'rehype-katex';
@@ -35,6 +35,7 @@ export interface StepBlockProps {
   isChecking?: boolean;
   onSubmit: (answer: string) => void;
   onRetry?: () => void;
+  onSkip?: () => void;
   onRequestHint: (level: number) => void;
   disabled?: boolean;
   variables?: string[]; // NEW: variables identified for 'Understand' phase
@@ -52,6 +53,7 @@ export function StepBlock({
   isChecking,
   onSubmit,
   onRetry,
+  onSkip,
   onRequestHint,
   disabled,
   variables,
@@ -163,18 +165,30 @@ export function StepBlock({
               disabled={isChecking || disabled}
             />
           )}
-          <button
-            className="step-block__submit"
-            onClick={handleSubmit}
-            disabled={
-              isChecking || disabled || 
-              (phase === 'understand' && variables && variables.length > 0 
-                ? !variables.every(v => variableInputs[v]?.trim()) 
-                : !input.trim())
-            }
-          >
-            {isChecking ? 'Checking...' : 'Check →'}
-          </button>
+          <div className="step-block__actions">
+            <button
+              className="step-block__submit"
+              onClick={handleSubmit}
+              disabled={
+                isChecking || disabled || 
+                (phase === 'understand' && variables && variables.length > 0 
+                  ? !variables.every(v => variableInputs[v]?.trim()) 
+                  : !input.trim())
+              }
+            >
+              {isChecking ? 'Checking...' : 'Check →'}
+            </button>
+            {onSkip && (
+              <button
+                className="step-block__skip"
+                onClick={onSkip}
+                disabled={isChecking || disabled}
+              >
+                <SkipForward size={13} />
+                Skip
+              </button>
+            )}
+          </div>
         </div>
       )}
 

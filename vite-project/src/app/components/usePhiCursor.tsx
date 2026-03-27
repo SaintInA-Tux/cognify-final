@@ -85,7 +85,7 @@ export function usePhiCursor() {
 /** Render this once at the top of App.tsx */
 export function PhiCursor() {
   return (
-    <div className="phi-cursor-container" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 9999 }}>
+    <div className="phi-cursor-container" style={{ position: 'fixed', inset: 0, pointerEvents: 'none', zIndex: 99999 }}>
       <div id="pp-cursor" className="pp-cursor" style={{ position: 'absolute', top: 0, left: 0, width: '6px', height: '6px', background: '#fff', borderRadius: '50%', transform: 'translate(-50%, -50%)', willChange: 'transform' }} />
       <div id="pp-cursor-ring" className="pp-cursor-ring" style={{ position: 'absolute', top: 0, left: 0, width: '32px', height: '32px', border: '1.5px solid rgba(255,255,255,0.3)', borderRadius: '50%', transform: 'translate(-50%, -50%)', transition: 'width 0.2s, height 0.2s, border-color 0.2s, background 0.2s', willChange: 'transform' }} />
       <style>{`

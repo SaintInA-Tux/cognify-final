@@ -10,6 +10,8 @@ import NotFoundPage from './components/NotFoundPage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import React from 'react';
 import { PhiCursor, usePhiCursor } from './components/usePhiCursor';
+import { createChat, getChats } from '../api';
+import { saveLastChatId, loadLastChatId } from './localStore';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { token, isLoading } = useAuth();
@@ -46,6 +48,41 @@ function ChatLayout() {
     if (id) navigate(`/chat/${id}`);
     else navigate('/chat');
   };
+
+  // Save last active chat ID whenever it changes
+  React.useEffect(() => {
+    if (chatId) saveLastChatId(chatId);
+  }, [chatId]);
+
+  // Intelligent Landing: Restore last chat or reuse empty chat
+  React.useEffect(() => {
+    if (!chatId) {
+      const lastId = loadLastChatId();
+      if (lastId) {
+        navigate(`/chat/${lastId}`, { replace: true });
+        return;
+      }
+
+      // No last ID? Look for an empty/new chat to reuse
+      getChats().then(chats => {
+        const emptyChat = chats.find(c => 
+          c.title === 'New Conversation' || 
+          c.title === 'New Session' || 
+          c.title === ''
+        );
+
+        if (emptyChat) {
+          navigate(`/chat/${emptyChat.id}`, { replace: true });
+        } else {
+          // Only create if truly necessary
+          createChat('New Conversation').then(newChat => {
+            navigate(`/chat/${newChat.id}`, { replace: true });
+            setRefreshTrigger(prev => prev + 1);
+          }).catch(err => console.error('Auto-create chat failed:', err));
+        }
+      }).catch(err => console.error('Failed to check existing chats:', err));
+    }
+  }, [chatId]); // Only on mount OR when chatId is cleared manually
 
   return (
     <div

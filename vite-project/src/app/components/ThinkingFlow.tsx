@@ -42,6 +42,7 @@ export interface ThinkingFlowProps {
   isLoading: boolean;
   onStepSubmit: (stepIndex: number, answer: string) => void;
   onStepRetry: (stepIndex: number) => void;
+  onStepSkip: (stepIndex: number) => void;
   onRequestHint: (stepIndex: number, level: number) => void;
   sosSolution: string | null;
   onRetryProblem: () => void;
@@ -57,6 +58,7 @@ export function ThinkingFlow({
   isLoading,
   onStepSubmit,
   onStepRetry,
+  onStepSkip,
   onRequestHint,
   sosSolution,
   onRetryProblem,
@@ -149,6 +151,7 @@ export function ThinkingFlow({
             isChecking={isLoading && step.state === 'active'}
             onSubmit={(answer) => !step.isRevealed && onStepSubmit(idx, answer)}
             onRetry={() => onStepRetry(idx)}
+            onSkip={() => onStepSkip(idx)}
             onRequestHint={(level) => onRequestHint(idx, level)}
             disabled={!!sosSolution}
             variables={step.phase === 'understand' ? variables : undefined}

@@ -2,9 +2,6 @@ import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   ArrowLeft, 
-  Activity, 
-  TrendingUp, 
-  Zap, 
   Brain,
   AlertTriangle,
   CheckCircle2,
@@ -13,7 +10,6 @@ import {
   LineChart,
   Microscope,
   Lightbulb,
-  ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -174,17 +170,17 @@ export function DashboardPage() {
       </div>
 
       <div className="scroll-wrap" ref={scrollWrapRef}>
-        <div className="max-w-[1200px] mx-auto">
+        <div className="dashboard-inner">
           <AnimatePresence mode="wait">
             {loading ? (
-              <motion.div key="loader" className="h-[60vh] flex flex-col items-center justify-center gap-4">
-                <Brain className="animate-pulse text-purple-500" size={48} />
-                <span className="text-[10px] uppercase tracking-[.3em] font-black text-white/40">Syncing Telemetry...</span>
+              <motion.div key="loader" className="dashboard-loader">
+                <Brain className="dashboard-loader__icon" size={48} />
+                <span className="dashboard-loader__text">Syncing Telemetry...</span>
               </motion.div>
             ) : error ? (
-              <div className="p-10 text-center"><AlertTriangle className="mx-auto text-red-500 mb-4" />{error}</div>
+              <div className="dashboard-error"><AlertTriangle className="dashboard-error__icon" />{error}</div>
             ) : data && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="dashboard-sections">
                 
                 {/* Overview */}
                 <div className="section-lbl" id="sec-overview">Overview</div>
@@ -233,7 +229,7 @@ export function DashboardPage() {
 
                   <div className="card">
                     <div className="card-hd"><span className="card-title">Subject Accuracy</span></div>
-                    <div className="space-y-1">
+                    <div className="dashboard-list">
                       {data.subject_breakdown.map(s => (
                         <div key={s.subject} className="subj-row">
                           <span className="subj-name">{s.subject}</span>
@@ -254,7 +250,7 @@ export function DashboardPage() {
                   {/* Weak Areas */}
                   <div className="card">
                     <div className="card-hd"><span className="card-title">Weak areas</span></div>
-                    <div className="space-y-3">
+                    <div className="dashboard-list--spaced">
                       {data.weakest_topics.slice(0, 4).map(t => (
                         <div key={t.topic} className="weak-item">
                           <div className="weak-header">
@@ -275,7 +271,7 @@ export function DashboardPage() {
                   {/* Most Asked & Heatmap */}
                   <div className="card">
                     <div className="card-hd"><span className="card-title">Struggle Frequency</span></div>
-                    <div className="space-y-1">
+                    <div className="dashboard-list">
                       {data.weakest_topics.slice(0, 5).map((t, i) => (
                         <div key={t.topic} className="freq-item">
                           <span className="freq-rank">0{i+1}</span>
@@ -286,8 +282,8 @@ export function DashboardPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="mt-6 pt-4 border-t border-white/5">
-                      <div className="card-title mb-2">SOS Heatmap — 4 weeks</div>
+                    <div className="dashboard-divider">
+                      <div className="card-title dashboard-divider__title">SOS Heatmap — 4 weeks</div>
                       <div className="heat-grid">
                         {data.sos_heatmap.map((v, i) => (
                           <div key={i} className={`heat-cell heat-${v}`} title={`${v} SOS requested`} />
@@ -299,7 +295,7 @@ export function DashboardPage() {
                   {/* Error Taxonomy */}
                   <div className="card">
                     <div className="card-hd"><span className="card-title">Error Taxonomy</span></div>
-                    <div className="space-y-1">
+                    <div className="dashboard-list">
                       {data.error_taxonomy.map(e => (
                         <div key={e.name} className="err-item">
                           <span className="err-icon">{e.icon}</span>
@@ -312,15 +308,17 @@ export function DashboardPage() {
                         </div>
                       ))}
                     </div>
-                    <div className="mt-6 pt-4 border-t border-white/5 space-y-2">
-                       <div className="card-title mb-2">AI Insights</div>
-                       <div className="insight warn">
-                          <span className="ins-icon">⚠</span>
-                          <span className="ins-text">{data.recommendation}</span>
-                       </div>
-                       <div className="insight good">
-                          <span className="ins-icon">✓</span>
-                          <span className="ins-text"><strong>Keep it up!</strong> Your current streak of {data.streak} days shows deep dedication.</span>
+                    <div className="dashboard-divider">
+                       <div className="card-title dashboard-divider__title">AI Insights</div>
+                       <div className="dashboard-list--tight">
+                         <div className="insight warn">
+                            <span className="ins-icon">⚠</span>
+                            <span className="ins-text">{data.recommendation}</span>
+                         </div>
+                         <div className="insight good">
+                            <span className="ins-icon">✓</span>
+                            <span className="ins-text"><strong>Keep it up!</strong> Your current streak of {data.streak} days shows deep dedication.</span>
+                         </div>
                        </div>
                     </div>
                   </div>

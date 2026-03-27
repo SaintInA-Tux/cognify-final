@@ -328,3 +328,65 @@
 .mbn-btn.act { color: #f0f0f0; }
 .mbn-icon { font-size: 17px; line-height: 1; }
 .mbn-label { font-size: 8px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; }
+
+/* ── Dashboard Utility Classes (replacing Tailwind) ── */
+.dashboard-inner { max-width: 1200px; margin: 0 auto; }
+.dashboard-sections { display: grid; gap: 24px; }
+.dashboard-loader {
+  height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.dashboard-loader__icon {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  color: #a855f7;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: .5; }
+}
+.dashboard-loader__text {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .3em;
+  font-weight: 900;
+  color: rgba(255,255,255,.4);
+}
+.dashboard-list { display: grid; gap: 4px; }
+.dashboard-list--spaced { display: grid; gap: 12px; }
+.dashboard-list--tight { display: grid; gap: 8px; }
+.dashboard-error {
+  padding: 40px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.dashboard-error__icon {
+  color: #ef4444;
+  margin-bottom: 16px;
+}
+.dashboard-divider {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255,255,255,.05);
+}
+.dashboard-divider__title {
+  margin-bottom: 8px;
+}
+.nav-av {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--s3);
+  border: 1px solid var(--bdrhi);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--thi);
+}

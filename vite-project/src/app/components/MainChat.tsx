@@ -10,6 +10,7 @@ import type { Message } from './MessageList';
 import type { ThinkingStep } from './ThinkingFlow';
 import type { StepPhase } from './StepBlock';
 import type { ClassificationResult, TopicWeakness } from '../../api';
+import { saveBrainProgress, loadBrainProgress, saveUserPrefs, loadUserPrefs } from '../localStore';
 import './MainChat.css';
 
 // --- Topic switch detection ---
@@ -36,8 +37,9 @@ const PHASE_ORDER: StepPhase[] = ['understand', 'identify', 'apply', 'solve'];
 export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatProps) {
   const { profile } = useAuth();
 
-  // Mode
-  const [mode, setMode] = useState<'general' | 'brain'>('general');
+  // Mode — load saved preference
+  const savedPrefs = loadUserPrefs();
+  const [mode, setMode] = useState<'general' | 'brain'>(savedPrefs?.mode || 'general');
 
   // General mode state
   const [messages, setMessages] = useState<Message[]>([]);
@@ -114,6 +116,24 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
     }
     // Reset brain state on chat switch
     resetBrainState();
+
+    // Try to load saved brain progress for new chat
+    if (activeChatId) {
+      const saved = loadBrainProgress(activeChatId);
+      if (saved && saved.attemptId) {
+        setActiveAttemptId(saved.attemptId);
+        setClassification(saved.classification);
+        setBrainDetails(saved.brainDetails);
+        setSteps(saved.steps);
+        setCurrentStepNumber(saved.currentStepNumber);
+        setPreviousSteps(saved.previousSteps);
+        setErrorCount(saved.errorCount);
+        setHintsUsedCount(saved.hintsUsedCount);
+        setSosSolution(saved.sosSolution);
+        if (saved.brainDetails) setMode('brain');
+      }
+    }
+
     return () => { cancelled = true; };
   }, [activeChatId]);
 
@@ -131,6 +151,23 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
     setModeSwitchCandidate(null);
     setModeSwitchCandidate(null);
   };
+
+  // Save brain progress to localStorage whenever steps change
+  useEffect(() => {
+    if (activeChatId && activeAttemptId && steps.length > 0) {
+      saveBrainProgress(activeChatId, {
+        attemptId: activeAttemptId,
+        classification,
+        brainDetails,
+        steps,
+        currentStepNumber,
+        previousSteps,
+        errorCount,
+        hintsUsedCount,
+        sosSolution,
+      });
+    }
+  }, [steps, currentStepNumber, sosSolution]);
 
   const initializeSteps = (): ThinkingStep[] => {
     return PHASE_ORDER.map((phase, i) => ({
@@ -280,6 +317,30 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
     });
   };
 
+  // --- Handle skipping a step ---
+  const handleStepSkip = (stepIndex: number) => {
+    setSteps(prev => {
+      const updated = [...prev];
+      updated[stepIndex] = {
+        ...updated[stepIndex],
+        state: 'correct',
+        feedback: 'Skipped.',
+        userAnswer: '(skipped)',
+        isRevealed: true,
+      };
+      // Activate next step
+      if (stepIndex + 1 < updated.length) {
+        updated[stepIndex + 1] = {
+          ...updated[stepIndex + 1],
+          state: 'active',
+        };
+      }
+      return updated;
+    });
+    setPreviousSteps(prev => [...prev, '(skipped)']);
+    setCurrentStepNumber(prev => prev + 1);
+  };
+
   // --- Handle hint request ---
   const handleRequestHint = async (stepIndex: number, level: number) => {
     if (!activeAttemptId) return;
@@ -343,6 +404,7 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
   const handleModeChange = (newMode: 'general' | 'brain') => {
     if (newMode === mode) return;
     setMode(newMode);
+    saveUserPrefs({ mode: newMode });
     // draftInput is NO LONGER reset here. It stays in state.
     // resetBrainState() REMOVED to allow switching back and forth.
   };
@@ -457,6 +519,7 @@ export function MainChat({ activeChatId, onChatCreated, onMenuClick }: MainChatP
                   isLoading={isLoading}
                   onStepSubmit={handleStepSubmit}
                   onStepRetry={handleStepRetry}
+                  onStepSkip={handleStepSkip}
                   onRequestHint={handleRequestHint}
                   sosSolution={sosSolution}
                   onRetryProblem={handleRetryProblem}
